@@ -1,3 +1,21 @@
 spring:
-  profiles:
-    active: db
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true  # <-- 제거: 빈 DB가 아니면 마이그레이션을 건너뛸 수 있음. 개발 초기에는 끄는 것이 안전.
+    clean-disabled: false # 개발 환경이므로 clean 허용 (필요시 flyway clean 가능하게)
+
+  jpa:
+    generate-ddl: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
