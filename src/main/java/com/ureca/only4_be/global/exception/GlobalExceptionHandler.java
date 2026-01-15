@@ -1,13 +1,11 @@
 package com.ureca.only4_be.global.exception;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.gson.JsonParseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -101,14 +99,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // [Exception] 인증 에러가 발생한 경우
-    @ExceptionHandler(AuthenticationException.class)
-    protected ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException e) {
-        log.error("handleAuthenticationException", e);
-        final ErrorResponse response = ErrorResponse.of(ErrorCode.NETWORK_AUTHENTICATION_REQUIRED, e.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NETWORK_AUTHENTICATION_REQUIRED);
-    }
-
     // [Exception] 데이터 무결성을 위반한 경우
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
@@ -131,14 +121,6 @@ public class GlobalExceptionHandler {
         }
         final ErrorResponse response = ErrorResponse.of(ErrorCode.IO_ERROR, ex.getMessage());
         return new ResponseEntity<>(response, status);
-    }
-
-    // com.google.gson 내에 Exception 발생하는 경우
-    @ExceptionHandler(JsonParseException.class)
-    protected ResponseEntity<ErrorResponse> handleJsonParseExceptionException(JsonParseException ex) {
-        log.error("handleJsonParseExceptionException", ex);
-        final ErrorResponse response = ErrorResponse.of(ErrorCode.JSON_PARSE_ERROR, ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     // com.fasterxml.jackson.core 내에 Exception 발생하는 경우
