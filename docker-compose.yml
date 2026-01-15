@@ -47,6 +47,26 @@ services:
       # ▼▼▼ [중요] Kafka UI는 이제 내부용 포트(29092)로 접속합니다 ▼▼▼
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      # 아까 만든 설정 파일을 컨테이너 안으로 넣어줍니다.
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts: #나중에 서버 주소로 바꾸기
+      - "host.docker.internal:host-gateway" # 도커가 내 맥북을 찾을 수 있게 해줌
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
   postgres:
     image: postgres:16-alpine
     container_name: postgres
