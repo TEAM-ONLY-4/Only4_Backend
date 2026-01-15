@@ -1,3 +1,3 @@
 spring:
-  application:
-    name: only4_be
+  profiles:
+    active: db

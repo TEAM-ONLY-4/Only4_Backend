@@ -1,11 +1,14 @@
+.gitignore
 HELP.md
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+gradlew
+gradlew.*
 
------- STS ------
+# --- STS ---
 .apt_generated
 .classpath
 .factorypath
@@ -17,7 +20,7 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
------- IntelliJ IDEA ------
+# --- IntelliJ IDEA ---
 .idea
 *.iws
 *.iml
@@ -26,12 +29,25 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
------- NetBeans ------
+# --- NetBeans ---
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
------- VS Code ------
+# --- VS Code ---
 .vscode/
+
+# --- Sensitive & Local Config (보안/설정) ---
+application-db.yml
+src/main/resources/application-db.yml
+.env
+prometheus.yml
+
+# --- Docker Data (데이터 절대 올리면 안 됨) ---
+pg_data/
+kafka_data/
+
+# --- GEMINI ---
+GEMINI.md
