@@ -1,52 +1,115 @@
 version: '3.8'
 
 services:
-  kafka:
+  # ------------------------------------------------------------
+  # [Broker 1] 리더 후보 1 (Host Port: 9092)
+  # ------------------------------------------------------------
+  kafka-1:
     image: apache/kafka:3.7.0
-    hostname: kafka
-    container_name: kafka
+    hostname: kafka-1
+    container_name: kafka-1
     ports:
       - "9092:9092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
 
-      # ▼▼▼ [핵심 수정 부분] ▼▼▼
-      # 리스너를 2개 만듭니다 (EXTERNAL: 외부용, INTERNAL: 내부용)
+      # [중요] 3개의 브로커가 서로 투표할 수 있도록 주소를 모두 적어줍니다.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+
+      # 리스너 설정 (외부:9092, 컨트롤러:9093, 내부:29092)
+      KAFKA_LISTENERS: PLAINTEXT://:9092, CONTROLLER://:9093, INTERNAL://:29092
+      # [중요] 외부에는 localhost:9092, 내부에는 kafka-1:29092 라고 알림
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092, INTERNAL://kafka-1:29092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT, INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # [중요] 3개 노드가 같은 클러스터임을 인식하기 위한 고정 ID (아무거나 동일하게)
+      KAFKA_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+
+      # 복제 계수 3으로 상향 (브로커가 3개니까!)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data1:/var/lib/kafka/data
+
+  # ------------------------------------------------------------
+  # [Broker 2] 리더 후보 2 (Host Port: 9093)
+  # ------------------------------------------------------------
+  kafka-2:
+    image: apache/kafka:3.7.0
+    hostname: kafka-2
+    container_name: kafka-2
+    ports:
+      - "9093:9092" # 호스트의 9093으로 들어오면 -> 컨테이너 9092로 연결
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
       KAFKA_LISTENERS: PLAINTEXT://:9092, CONTROLLER://:9093, INTERNAL://:29092
 
-      # 외부(Host)에는 localhost를, 내부(Docker)에는 kafka:29092를 알려줍니다.
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092, INTERNAL://kafka:29092
+      # [중요] 외부에는 localhost:9093, 내부에는 kafka-2:29092 라고 알림
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093, INTERNAL://kafka-2:29092
 
-      # 보안 프로토콜 매핑
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT, INTERNAL:PLAINTEXT
-
-      # 도커 내부끼리 통신할 때는 INTERNAL 리스너를 쓴다고 설정
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      # ▲▲▲ [수정 끝] ▲▲▲
-
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-
     volumes:
-      - kafka_data:/var/lib/kafka/data
+      - kafka_data2:/var/lib/kafka/data
 
+  # ------------------------------------------------------------
+  # [Broker 3] 리더 후보 3 (Host Port: 9094)
+  # ------------------------------------------------------------
+  kafka-3:
+    image: apache/kafka:3.7.0
+    hostname: kafka-3
+    container_name: kafka-3
+    ports:
+      - "9094:9092" # 호스트의 9094로 들어오면 -> 컨테이너 9092로 연결
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092, CONTROLLER://:9093, INTERNAL://:29092
+
+      # [중요] 외부에는 localhost:9094, 내부에는 kafka-3:29092 라고 알림
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9094, INTERNAL://kafka-3:29092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT, INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data3:/var/lib/kafka/data
+
+  # ------------------------------------------------------------
+  # Kafka UI (모든 브로커 연결)
+  # ------------------------------------------------------------
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     depends_on:
-      - kafka
+      - kafka-1
+      - kafka-2
+      - kafka-3
     ports:
       - "8090:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      # ▼▼▼ [중요] Kafka UI는 이제 내부용 포트(29092)로 접속합니다 ▼▼▼
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-
+      KAFKA_CLUSTERS_0_NAME: local-cluster
+      # [중요] 3개 브로커의 내부 주소를 콤마(,)로 연결
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
 
   prometheus:
     image: prom/prometheus:latest
@@ -54,10 +117,9 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      # 아까 만든 설정 파일을 컨테이너 안으로 넣어줍니다.
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    extra_hosts: #나중에 서버 주소로 바꾸기
-      - "host.docker.internal:host-gateway" # 도커가 내 맥북을 찾을 수 있게 해줌
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   grafana:
     image: grafana/grafana:latest
@@ -80,5 +142,8 @@ services:
       - ./pg_data:/var/lib/postgresql/data
     restart: always
 
+# 볼륨도 3개 만들어야 함
 volumes:
-  kafka_data:
+  kafka_data1:
+  kafka_data2:
+  kafka_data3:
