@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,8 +29,8 @@ public class SubscriptionUsage extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_subscription_usage_to_subscription"))
     private Subscription subscription;
 
-    @Column(name = "usage_yyyymm", nullable = false, length = 6, columnDefinition = "char(6)")
-    private String usageYyyymm;
+    @Column(name = "usage_year_month", nullable = false)
+    private LocalDate usageYearMonth;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
