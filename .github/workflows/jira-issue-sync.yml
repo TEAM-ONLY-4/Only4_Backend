@@ -20,7 +20,7 @@ jobs:
         uses: stefanbuck/github-issue-parser@v3
         id: issue-parser
         with:
-          template-path: .github/ISSUE_TEMPLATE/issue_report.md # [중요] 실제 템플릿 파일명으로 수정하세요
+          template-path: .github/ISSUE_TEMPLATE/jira_issue_form.yml # [중요] 실제 템플릿 파일명으로 수정하세요
 
       # 2. Jira 로그인
       - name: Login to Jira
