@@ -43,8 +43,6 @@ out/
 application-db.yml
 src/main/resources/application-db.yml
 .env
-prometheus.yml
-**/application.yml
 
 # --- Docker Data (데이터 절대 올리면 안 됨) ---
 pg_data/

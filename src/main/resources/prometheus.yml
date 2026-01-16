@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 30s # 5초마다 데이터 수집
+
+scrape_configs:
+  - job_name: 'prometheus'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      # [중요] host.docker.internal은 도커 안에서 '내 맥북(Localhost)'을 가리키는 주소입니다.
+      # 나중에 실제 IP 주소로 바뀌어야 함
+      - targets: ['host.docker.internal:8080']
