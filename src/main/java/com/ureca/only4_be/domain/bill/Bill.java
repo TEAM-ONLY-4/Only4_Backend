@@ -28,8 +28,8 @@ public class Bill extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_bill_to_member"))
     private Member member;
 
-    @Column(name = "billing_yyyymm", nullable = false, length = 6, columnDefinition = "char(6)")
-    private String billingYyyymm;
+    @Column(name = "billing_year_month", nullable = false)
+    private LocalDate billingYearMonth;
 
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 0)
     private BigDecimal totalAmount;

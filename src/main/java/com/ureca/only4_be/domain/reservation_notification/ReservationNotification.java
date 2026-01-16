@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -21,8 +22,8 @@ public class ReservationNotification extends BaseEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @Column(name = "target_billing_yyyymm", nullable = false, length = 6, columnDefinition = "char(6)")
-    private String targetBillingYyyymm;
+    @Column(name = "target_billing_year_month", nullable = false)
+    private LocalDate targetBillingYearMonth;
 
     @Column(name = "scheduled_send_at", nullable = false)
     private LocalDateTime scheduledSendAt;
