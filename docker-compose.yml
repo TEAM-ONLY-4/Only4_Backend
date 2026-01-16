@@ -2,115 +2,52 @@ version: '3.8'
 
 services:
   # ------------------------------------------------------------
-  # [Broker 1] 리더 후보 1 (Host Port: 9092)
+  # [Broker] 단일 브로커 (Host Port: 9092)
   # ------------------------------------------------------------
-  kafka-1:
+  kafka:
     image: apache/kafka:3.7.0
-    hostname: kafka-1
-    container_name: kafka-1
+    hostname: kafka
+    container_name: kafka
     ports:
       - "9092:9092"
+    restart: always
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-
-      # [중요] 3개의 브로커가 서로 투표할 수 있도록 주소를 모두 적어줍니다.
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
-
-      # 리스너 설정 (외부:9092, 컨트롤러:9093, 내부:29092)
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_LISTENERS: PLAINTEXT://:9092, CONTROLLER://:9093, INTERNAL://:29092
-      # [중요] 외부에는 localhost:9092, 내부에는 kafka-1:29092 라고 알림
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092, INTERNAL://kafka-1:29092
-
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092, INTERNAL://kafka:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT, INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk' # 임의의 값
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 
-      # [중요] 3개 노드가 같은 클러스터임을 인식하기 위한 고정 ID (아무거나 동일하게)
-      KAFKA_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-
-      # 복제 계수 3으로 상향 (브로커가 3개니까!)
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
+
     volumes:
-      - kafka_data1:/var/lib/kafka/data
+      - kafka_data:/var/lib/kafka/data
 
   # ------------------------------------------------------------
-  # [Broker 2] 리더 후보 2 (Host Port: 9093)
-  # ------------------------------------------------------------
-  kafka-2:
-    image: apache/kafka:3.7.0
-    hostname: kafka-2
-    container_name: kafka-2
-    ports:
-      - "9093:9092" # 호스트의 9093으로 들어오면 -> 컨테이너 9092로 연결
-    environment:
-      KAFKA_NODE_ID: 2
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
-      KAFKA_LISTENERS: PLAINTEXT://:9092, CONTROLLER://:9093, INTERNAL://:29092
-
-      # [중요] 외부에는 localhost:9093, 내부에는 kafka-2:29092 라고 알림
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093, INTERNAL://kafka-2:29092
-
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT, INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - kafka_data2:/var/lib/kafka/data
-
-  # ------------------------------------------------------------
-  # [Broker 3] 리더 후보 3 (Host Port: 9094)
-  # ------------------------------------------------------------
-  kafka-3:
-    image: apache/kafka:3.7.0
-    hostname: kafka-3
-    container_name: kafka-3
-    ports:
-      - "9094:9092" # 호스트의 9094로 들어오면 -> 컨테이너 9092로 연결
-    environment:
-      KAFKA_NODE_ID: 3
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
-      KAFKA_LISTENERS: PLAINTEXT://:9092, CONTROLLER://:9093, INTERNAL://:29092
-
-      # [중요] 외부에는 localhost:9094, 내부에는 kafka-3:29092 라고 알림
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9094, INTERNAL://kafka-3:29092
-
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT, INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - kafka_data3:/var/lib/kafka/data
-
-  # ------------------------------------------------------------
-  # Kafka UI (모든 브로커 연결)
+  # Kafka UI
   # ------------------------------------------------------------
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
     depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      - kafka
     ports:
       - "8090:8080"
+    restart: always
     environment:
       KAFKA_CLUSTERS_0_NAME: local-cluster
-      # [중요] 3개 브로커의 내부 주소를 콤마(,)로 연결
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
+  # ------------------------------------------------------------
+  # Prometheus & Grafana (기존 유지)
+  # ------------------------------------------------------------
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -129,23 +66,20 @@ services:
     depends_on:
       - prometheus
 
-#  postgres:
-#    image: postgres:16-alpine
-#    container_name: postgres
-#    ports:
-#      - "5432:5432"
-#    env_file:
-#      - .env
-#    environment:
-#      POSTGRES_DB: ${POSTGRES_DB}
-#      POSTGRES_USER: ${POSTGRES_USER}
-#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#    volumes:
-#      - ./pg_data:/var/lib/postgresql/data
-#    restart: always
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    restart: always
 
-# 볼륨도 3개 만들어야 함
 volumes:
-  kafka_data1:
-  kafka_data2:
-  kafka_data3:
+  kafka_data:
