@@ -129,20 +129,20 @@ services:
     depends_on:
       - prometheus
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: postgres
-    ports:
-      - "5432:5432"
-    env_file:
-      - .env
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - ./pg_data:/var/lib/postgresql/data
-    restart: always
+#  postgres:
+#    image: postgres:16-alpine
+#    container_name: postgres
+#    ports:
+#      - "5432:5432"
+#    env_file:
+#      - .env
+#    environment:
+#      POSTGRES_DB: ${POSTGRES_DB}
+#      POSTGRES_USER: ${POSTGRES_USER}
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#    volumes:
+#      - ./pg_data:/var/lib/postgresql/data
+#    restart: always
 
 # 볼륨도 3개 만들어야 함
 volumes:
