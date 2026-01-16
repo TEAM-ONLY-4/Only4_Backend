@@ -1,17 +1,20 @@
-server:
-  port: 8080
-
 spring:
+  profiles:
+    # local : IntelliJ에서 개발할 때
+    # dev   : Docker Compose로 실행할 때
+    # prod  : 실제 배포할 때
+    active: local
+
+  # 공통 설정
+  application:
+    name: only4-backend
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   flyway:
     enabled: true
-    baseline-on-migrate: true  # <-- 제거: 빈 DB가 아니면 마이그레이션을 건너뛸 수 있음. 개발 초기에는 끄는 것이 안전.
-    clean-disabled: false # 개발 환경이므로 clean 허용 (필요시 flyway clean 가능하게)
+    baseline-on-migrate: true
 
   jpa:
     generate-ddl: false
@@ -21,28 +24,18 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
 
   kafka:
-    # 브로커 3개
-    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
-
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
-
-      # [데이터 무결성 설정]
-      # 리더 & 팔로워 모두 데이터 잘 받았는지 확인하고 넘어감 (데이터 유실 방지)
       acks: all
-
-      # 재시도 횟수 (전송 실패 시 몇 번 더 시도할지)
       retries: 3
 
 management:
   endpoints:
     web:
       exposure:
-        # 여기에 prometheus가 없으면 404 에러가 뜹니다.
         include: prometheus, health
   endpoint:
     prometheus:
