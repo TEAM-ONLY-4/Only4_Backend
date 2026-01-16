@@ -1,5 +1,5 @@
 ---
-name: Custom Report
+name: issue Report
 about: 작업 이슈
 assignees: ''
 

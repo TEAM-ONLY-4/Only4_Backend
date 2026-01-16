@@ -1,0 +1,59 @@
+name: Jira Issue & Branch Sync
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create-jira-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 브랜치 생성을 위해 필수
+      issues: write    # 이슈 수정 및 댓글 작성을 위해 필수
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. 이슈 템플릿 내용 분석 (Parsing)
+      - name: Parse Issue Template
+        uses: stefanbuck/github-issue-parser@v3
+        id: issue-parser
+        with:
+          template-path: .github/ISSUE_TEMPLATE/issue_report.md # [중요] 실제 템플릿 파일명으로 수정하세요
+
+      # 2. Jira 로그인
+      - name: Login to Jira
+        uses: atlassian/gajira-login@v3
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+      # 3. Jira 이슈 생성
+      - name: Create Jira Issue
+        id: create
+        uses: atlassian/gajira-create@v3
+        with:
+          project: "ONLY4"  # [확인] 본인 프로젝트 키 (예: URECA, CPG 등)
+
+          # 템플릿에서 선택한 Issue Type (Task, Story)을 그대로 사용
+          issuetype: "${{ steps.issue-parser.outputs.issueparser_issueType }}"
+
+          summary: "${{ github.event.issue.title }}"
+
+          # 상세 내용과 참조 링크를 조합해서 지라 본문에 넣음
+          description: |
+            h2. Description
+            ${{ steps.issue-parser.outputs.issueparser_details }}
+            ----
+            [GitHub Issue Link|${{ github.event.issue.html_url }}]
+
+      # 5. 깃허브 이슈 제목 업데이트
+      - name: Update GitHub Issue Title
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "update-issue"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "[${{ steps.create.outputs.issue }}] ${{ github.event.issue.title }}"
+
