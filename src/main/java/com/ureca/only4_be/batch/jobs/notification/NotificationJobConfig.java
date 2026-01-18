@@ -20,7 +20,7 @@ public class NotificationJobConfig {
     public Job notificationJob() {
         return new JobBuilder("notificationJob", jobRepository)
                 .start(notificationStep) // Step 시작
-                // .incrementer(new RunIdIncrementer()) //테스트시 코드
+                .incrementer(new RunIdIncrementer()) //테스트시 코드
                 .build();
     }
 }
