@@ -34,6 +34,7 @@ public class SettlementItemReader implements ItemReader<SettlementSourceDto> {
     private final SubscriptionDiscountRepository discountRepository;
     private final MobilePlanSpecRepository mobilePlanSpecRepository;
     private final AddonSpecRepository addonSpecRepository;
+    private final TvSpecRepository tvPlanSpecRepository;
 
     private JpaPagingItemReader<Member> delegateReader;
 
@@ -50,42 +51,44 @@ public class SettlementItemReader implements ItemReader<SettlementSourceDto> {
             delegateReader.afterPropertiesSet();
         }
 
-        // 2. 회원 1명 읽기
+        // 2. 회원 1명 읽기 (조회)
         Member member = delegateReader.read();
         if (member == null) return null;
 
-        // 3. [조회] 회원이 구독한 모든 상품 정보 수집
-        // (1) 기기 할부 (Device 포함 Fetch Join)
+        // 3. 기기 조회 (Device 포함 Fetch Join)
         List<MemberDevice> devices = memberDeviceRepository.findAllByMember(member);
 
-        // (2) 일회성 결제
+        // 4. 일회성 결제 조회
         List<OneTimePurchase> oneTimePurchases = oneTimePurchaseRepository.findAllByMember(member);
 
-        // (3) 구독 (Product 포함 Fetch Join)
+        // 5. 구독 조회 (Product 포함 Fetch Join)
         List<Subscription> subscriptions = subscriptionRepository.findAllByMemberWithProduct(member);
 
-        // 4. [조립] 구독 상세 정보 매핑
+        // 6. [조립] 구독 상세 정보 매핑
         List<SubscriptionDetailDto> subDetails = new ArrayList<>();
         if (!subscriptions.isEmpty()) {
-            // --- [1] 구독 목록에서 'Product'들만 쏙 뽑아내기 (중복 제거) ---
+
+            // [1] 상품 목록 추출
             List<Product> products = subscriptions.stream()
                     .map(Subscription::getProduct)
-                    .distinct() // 똑같은 상품 2개 구독했을 수도 있으니 중복 제거
+                    .distinct()
                     .toList();
 
-            // --- [2] 스펙 정보 한 방 조회 (IN 쿼리) ---
-            // "이 상품들에 해당하는 스펙 있으면 다 내놔!"
+            // [2] 3가지 스펙 테이블 동시에 조회 (IN 쿼리)
+            // DB에 데이터가 있는 것만 가져오므로 ID 범위를 여기서 알 필요 없음
             List<MobilePlanSpec> mobileSpecs = mobilePlanSpecRepository.findAllByProductIn(products);
             List<AddonSpec> addonSpecs = addonSpecRepository.findAllByProductIn(products);
+            List<TvSpec> tvSpecs = tvPlanSpecRepository.findAllByProductIn(products);
 
-            // --- [3] Map으로 정리 (Key: 상품 ID) ---
-            Map<Long, MobilePlanSpec> mobileSpecMap = mobileSpecs.stream()
+            // [3] Map핑 (빠른 검색용)
+            Map<Long, MobilePlanSpec> mobileMap = mobileSpecs.stream()
+                    .collect(Collectors.toMap(s -> s.getProduct().getId(), s -> s));
+            Map<Long, AddonSpec> addonMap = addonSpecs.stream()
+                    .collect(Collectors.toMap(s -> s.getProduct().getId(), s -> s));
+            Map<Long, TvSpec> tvMap = tvSpecs.stream()
                     .collect(Collectors.toMap(s -> s.getProduct().getId(), s -> s));
 
-            Map<Long, AddonSpec> addonSpecMap = addonSpecs.stream()
-                    .collect(Collectors.toMap(s -> s.getProduct().getId(), s -> s));
-
-            // --- [4] 사용량, 할인 조회 및 매핑 (기존 로직) ---
+            // [4] 사용량/할인 Map 만들기
             List<SubscriptionUsage> usages = usageRepository.findAllBySubscriptionIn(subscriptions);
             List<SubscriptionDiscount> discounts = discountRepository.findAllBySubscriptionIn(subscriptions);
 
@@ -94,25 +97,22 @@ public class SettlementItemReader implements ItemReader<SettlementSourceDto> {
             Map<Long, List<SubscriptionDiscount>> discountMap = discounts.stream()
                     .collect(Collectors.groupingBy(d -> d.getSubscription().getId()));
 
-            // --- [5] 최종 조립 ---
+            // [5] 조립
             for (Subscription sub : subscriptions) {
-                Long productId = sub.getProduct().getId(); // 상품 ID
-
-                // 맵에서 꺼내기 (없으면 알아서 null이 나옴)
-                MobilePlanSpec myMobileSpec = mobileSpecMap.get(productId);
-                AddonSpec myAddonSpec = addonSpecMap.get(productId);
+                Long pid = sub.getProduct().getId();
 
                 subDetails.add(new SubscriptionDetailDto(
                         sub,
                         usageMap.getOrDefault(sub.getId(), new ArrayList<>()),
                         discountMap.getOrDefault(sub.getId(), new ArrayList<>()),
-                        myMobileSpec, // ★ 모바일 스펙 주입 (없으면 null)
-                        myAddonSpec   // ★ 부가서비스 스펙 주입 (없으면 null)
+                        mobileMap.get(pid), // 모바일 스펙 (없으면 null)
+                        addonMap.get(pid),  // 부가서비스 스펙 (없으면 null)
+                        tvMap.get(pid)      // TV 스펙 (없으면 null)
                 ));
             }
         }
 
-        // 5. 최종 DTO 반환
+        // 7. 최종 DTO 반환
         return new SettlementSourceDto(member, devices, subDetails, oneTimePurchases);
     }
 }
