@@ -5,6 +5,7 @@ import com.ureca.only4_be.batch.jobs.settlement.dto.SettlementSourceDto;
 import com.ureca.only4_be.batch.jobs.settlement.dto.SubscriptionDetailDto;
 import com.ureca.only4_be.batch.jobs.settlement.common.ProductIdRange;
 import com.ureca.only4_be.domain.bill.Bill;
+import com.ureca.only4_be.domain.bill.BillRepository;
 import com.ureca.only4_be.domain.bill.BillSendStatus;
 import com.ureca.only4_be.domain.bill_item.BillItem;
 import com.ureca.only4_be.domain.bill_item.BillItemCategory;
@@ -37,12 +38,24 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourceDto, BillResultDto> {
 
+    private final BillRepository billRepository;
+
     // LTE 표준 요금제 ID 상수
     private static final Long LTE_STANDARD_PLAN_ID = 130L;
 
     @Override
     public BillResultDto process(SettlementSourceDto item) throws Exception {
         Member member = item.getMember();
+        LocalDate targetBillingDate = LocalDate.of(2026, 1, 5); // 현재 하드코딩 된 청구 기준일
+
+        // ==========================================================
+        // ★ [중복 방지 로직] 이미 이번 달 청구서가 만들어졌는지 확인
+        // ==========================================================
+        if (billRepository.existsByMemberAndBillingYearMonth(member, targetBillingDate)) {
+            log.info("[Skip] 회원(ID: {})의 {} 청구서가 이미 존재합니다.", member.getId(), targetBillingDate);
+            return null; // ★ null을 반환하면 Writer로 넘어가지 않고 무시됨 (Insert 안 함)
+        }
+
         List<BillItem> billItems = new ArrayList<>();
 
         // 금액 집계 변수
@@ -212,7 +225,7 @@ public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourc
 
         Bill bill = Bill.builder()
                 .member(member)
-                .billingYearMonth(LocalDate.of(2026, 1, 5))
+                .billingYearMonth(targetBillingDate)
                 .totalAmount(totalUsageAmount)
                 .vat(vat)
                 .unpaidAmount(unpaidAmount)
