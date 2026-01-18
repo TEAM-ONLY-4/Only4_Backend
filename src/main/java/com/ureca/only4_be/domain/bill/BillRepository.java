@@ -1,11 +1,13 @@
 package com.ureca.only4_be.domain.bill;
 
+import com.ureca.only4_be.domain.member.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -15,4 +17,7 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     @Modifying(clearAutomatically = true) // 벌크 연산 후 영속성 컨텍스트 초기화
     @Query("UPDATE Bill b SET b.billSendStatus = 'SENT' WHERE b.id IN :ids")
     void updateBillStatusToSendComplete(@Param("ids") List<Long> ids);
+
+    // 회원의 특정 년월 청구서가 존재하는지 확인
+    boolean existsByMemberAndBillingYearMonth(Member member, LocalDate billingYearMonth);
 }
