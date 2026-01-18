@@ -32,6 +32,13 @@ spring:
       acks: all
       retries: 3
 
+  # 스프링 배치 필수 설정
+  batch:
+    jdbc:
+      initialize-schema: always # 배치 실행에 필요한 메타 테이블(BATCH_JOB_INSTANCE 등)을 자동 생성
+    job:
+      enabled: false  # 앱 실행될 때 모든 배치가 자동 실행되는 것 방지 (보통 막아둠)
+
 management:
   endpoints:
     web:
