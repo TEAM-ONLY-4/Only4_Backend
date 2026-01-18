@@ -6,10 +6,7 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.configuration.JobRegistry;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
@@ -22,7 +19,7 @@ public class BatchController {
     private final JobRegistry jobRegistry;
 
     // 테스트용 URL: POST http://localhost:8080/api/batch/settlement
-    @PostMapping("/settlement")
+    @GetMapping("/settlement")
     public String runSettlementJob(@RequestParam(value = "date", required = false) String date) {
         try {
             // "settlementJob" 이라는 이름의 Bean을 찾아서 실행
