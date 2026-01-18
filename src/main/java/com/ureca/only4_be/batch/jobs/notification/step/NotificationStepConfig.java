@@ -1,6 +1,7 @@
 package com.ureca.only4_be.batch.jobs.notification.step;
 
 import com.ureca.only4_be.batch.jobs.notification.dto.NotificationRequest;
+import com.ureca.only4_be.batch.jobs.notification.listener.NotificationSkipListener;
 import com.ureca.only4_be.batch.jobs.notification.processor.BillToNotificationProcessor;
 import com.ureca.only4_be.batch.jobs.notification.writer.BillStatusUpdateWriter;
 import com.ureca.only4_be.batch.jobs.notification.writer.NotificationKafkaWriter;
@@ -15,6 +16,9 @@ import org.springframework.batch.item.support.builder.CompositeItemWriterBuilder
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.dao.TransientDataAccessException;
+import java.net.ConnectException;
+import java.util.concurrent.TimeoutException;
 
 @Configuration
 @RequiredArgsConstructor
@@ -25,14 +29,30 @@ public class NotificationStepConfig {
     private final BillToNotificationProcessor notificationProcessor;
     private final NotificationKafkaWriter notificationKafkaWriter;
     private final BillStatusUpdateWriter billStatusUpdateWriter;
+    private final NotificationSkipListener notificationSkipListener; // 리스너 주입
 
     @Bean
     public Step notificationStep() {
         return new StepBuilder("notificationStep", jobRepository)
-                .<Bill, NotificationRequest>chunk(100, transactionManager)
+                .<Bill, NotificationRequest>chunk(1000, transactionManager)
                 .reader(notificationReader)
                 .processor(notificationProcessor)
                 .writer(compositeWriter())
+                //----실패 처리 전략 ----
+                .faultTolerant()// 내결함성(Fault Tolerance) 활성화
+
+                // 1. Skip 설정 (데이터 문제)
+                .skip(Exception.class)      // 모든 예외에 대해 일단 Skip 고려 (운영 정책에 따라 구체적 예외 지정 권장)
+                .skipLimit(100)             // 허용 가능한 에러 개수 (100개 넘으면 배치 실패)
+
+                // 2. Retry 설정 (네트워크 문제)
+                .retry(TimeoutException.class)       // Kafka 타임아웃
+                .retry(ConnectException.class)       // 연결 실패
+                .retry(TransientDataAccessException.class) // DB 일시적 장애
+                .retryLimit(3)                       // 에러 발생 시 3번까지 재시도
+
+                // 3. Listener 등록
+                .listener(notificationSkipListener) // Skip 발생 시 로그 남기기
                 .build();
     }
 
