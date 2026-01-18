@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class SettlementJobConfig {
 
     private final JobRepository jobRepository;
-    private final SettlementStepConfig settlementStepConfig; // Step 설정 가져오기
+    private final SettlementStepConfig settlementStepConfig;
 
     @Bean
     public Job settlementJob() {
