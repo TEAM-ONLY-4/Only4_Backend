@@ -1,5 +1,6 @@
 package com.ureca.only4_be.batch.jobs.notification;
 
+import com.ureca.only4_be.batch.jobs.notification.listener.NotificationSkipListener;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
