@@ -68,7 +68,7 @@ class NotificationItemReaderTest {
         // Bill 생성
         Bill bill = Bill.builder()
                 .member(member)
-                .billingYyyymm("202601")
+                .billingYearMonth(LocalDate.of(2026, 5, 1))
                 .billSendStatus(BillSendStatus.BEFORE_SENT) // 미발송이지만
                 .paymentOwnerNameSnapshot("a").paymentNameSnapshot("a").paymentNumberSnapshot("1")
                 .build();
