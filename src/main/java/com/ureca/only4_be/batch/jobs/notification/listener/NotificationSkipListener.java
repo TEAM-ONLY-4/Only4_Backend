@@ -2,12 +2,14 @@ package com.ureca.only4_be.batch.jobs.notification.listener;
 
 import com.ureca.only4_be.batch.jobs.notification.dto.NotificationRequest;
 import com.ureca.only4_be.domain.bill.Bill;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.SkipListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class NotificationSkipListener implements SkipListener<Bill, NotificationRequest> {
 
     @Override
