@@ -194,7 +194,7 @@ public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourc
 
                 // 스냅샷이 없는 기본 메소드 호출
                 billItems.add(createBillItem(
-                        BillItemCategory.DISCOUN,
+                        BillItemCategory.DISCOUNT,
                         BillItemSubcategory.SELECTIVE_CONTRACT,
                         discount.getDiscountPolicy().getDiscountName(),
                         discountValue.negate() // 음수 처리
