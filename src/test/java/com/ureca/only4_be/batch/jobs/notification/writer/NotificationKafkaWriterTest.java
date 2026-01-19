@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("local")
-@EmbeddedKafka(partitions = 1, topics = {"billing-notification-topic"})
+@EmbeddedKafka(partitions = 1, topics = {"email.send.request"})
 class NotificationKafkaWriterTest {
 
     @Autowired
@@ -60,14 +60,13 @@ class NotificationKafkaWriterTest {
         DefaultKafkaConsumerFactory<String, String> cf = new DefaultKafkaConsumerFactory<>(consumerProps);
         consumer = cf.createConsumer();
 
-        // Consumer는 'billing-notification-topic'을 구독함
-        embeddedKafkaBroker.consumeFromAnEmbeddedTopic(consumer, "billing-notification-topic");
+        // Consumer
+        embeddedKafkaBroker.consumeFromAnEmbeddedTopic(consumer, "email.send.request");
 
         // [2. Producer Data Setup]
         NotificationRequest request = NotificationRequest.builder()
                 .billId(123L)
                 .memberId(1L)
-                .totalAmount(BigDecimal.valueOf(10000))
                 .build();
 
         Chunk<NotificationRequest> chunk = new Chunk<>(List.of(request));
@@ -76,10 +75,15 @@ class NotificationKafkaWriterTest {
         kafkaWriter.write(chunk);
 
         // [4. Assertion]
-        ConsumerRecord<String, String> record = KafkaTestUtils.getSingleRecord(consumer, "billing-notification-topic", Duration.ofSeconds(10));
-
+        ConsumerRecord<String, String> record = KafkaTestUtils.getSingleRecord(consumer, "email.send.request", Duration.ofSeconds(10));
         assertThat(record.key()).isEqualTo("123");
-        assertThat(record.value()).contains("10000");
+        String messageBody = record.value();
+
+        assertThat(messageBody).contains("123"); // billId 포함 여부 확인
+        assertThat(messageBody).contains("1");   // memberId 포함 여부 확인
+
+        assertThat(messageBody).contains("\"billId\":123");
+        assertThat(messageBody).contains("\"memberId\":1");
 
         System.out.println(">>> ✅ 테스트 성공: 수신된 메시지 = " + record.value());
     }
