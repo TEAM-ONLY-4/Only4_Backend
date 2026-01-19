@@ -29,6 +29,7 @@ public class SettlementStepConfig {
         return new StepBuilder("settlementStep", jobRepository)
                 .<SettlementSourceDto, BillResultDto>chunk(100, transactionManager) // 트랜잭션 단위 100개
                 .reader(reader)
+                .stream(reader)
                 .processor(processor)
                 .writer(writer)
                 .build();

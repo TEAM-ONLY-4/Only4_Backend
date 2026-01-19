@@ -8,23 +8,29 @@ import com.ureca.only4_be.domain.product.*;
 import com.ureca.only4_be.domain.subscription.*;
 import com.ureca.only4_be.domain.subscription_discount.*;
 import com.ureca.only4_be.domain.subscription_usage.*;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemStreamReader;
+import org.springframework.batch.item.ExecutionContext;
+import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Configuration
+@Component
 @RequiredArgsConstructor
-public class SettlementItemReader implements ItemReader<SettlementSourceDto> {
+// ★ 변경 1: ItemReader -> ItemStreamReader (Lifecycle 관리 포함)
+public class SettlementItemReader implements ItemStreamReader<SettlementSourceDto> {
 
     private final EntityManagerFactory entityManagerFactory;
     private final SubscriptionRepository subscriptionRepository;
@@ -38,33 +44,40 @@ public class SettlementItemReader implements ItemReader<SettlementSourceDto> {
 
     private JpaPagingItemReader<Member> delegateReader;
 
+    // ★ 변경 2: read() 내부가 아니라, 서버 켜질 때 미리 초기화 (@PostConstruct)
+    @PostConstruct
+    public void init() {
+        this.delegateReader = new JpaPagingItemReaderBuilder<Member>()
+                .name("delegateMemberReader")
+                .entityManagerFactory(entityManagerFactory)
+                .pageSize(100)
+                .queryString("SELECT m FROM Member m")
+                .maxItemCount(50) // 테스트용 1000명 제한 필요시 주석 해제
+                .build();
+
+        try {
+            this.delegateReader.afterPropertiesSet();
+        } catch (Exception e) {
+            throw new RuntimeException("Delegate Reader 초기화 실패", e);
+        }
+    }
+
     @Override
     public SettlementSourceDto read() throws Exception {
-        // 1. [하청] 회원 페이징 Reader 초기화
-        if (delegateReader == null) {
-            delegateReader = new JpaPagingItemReaderBuilder<Member>()
-                    .name("delegateMemberReader")
-                    .entityManagerFactory(entityManagerFactory)
-                    .pageSize(100)
-                    .queryString("SELECT m FROM Member m WHERE m.status = 'ACTIVE'")
-                    .build();
-            delegateReader.afterPropertiesSet();
-        }
-
-        // 2. 회원 1명 읽기 (조회)
+        // 1. 회원 1명 읽기 (이제 delegateReader는 이미 준비된 상태)
         Member member = delegateReader.read();
         if (member == null) return null;
 
-        // 3. 기기 조회 (Device 포함 Fetch Join)
+        // 2. 기기 조회 (Device 포함 Fetch Join)
         List<MemberDevice> devices = memberDeviceRepository.findAllByMember(member);
 
-        // 4. 일회성 결제 조회
+        // 3. 일회성 결제 조회
         List<OneTimePurchase> oneTimePurchases = oneTimePurchaseRepository.findAllByMember(member);
 
-        // 5. 구독 조회 (Product 포함 Fetch Join)
+        // 4. 구독 조회 (Product 포함 Fetch Join)
         List<Subscription> subscriptions = subscriptionRepository.findAllByMemberWithProduct(member);
 
-        // 6. [조립] 구독 상세 정보 매핑
+        // 5. [조립] 구독 상세 정보 매핑
         List<SubscriptionDetailDto> subDetails = new ArrayList<>();
         if (!subscriptions.isEmpty()) {
 
@@ -112,7 +125,26 @@ public class SettlementItemReader implements ItemReader<SettlementSourceDto> {
             }
         }
 
-        // 7. 최종 DTO 반환
+        // 6. 최종 DTO 반환
         return new SettlementSourceDto(member, devices, subDetails, oneTimePurchases);
+    }
+
+    @Override
+    public void open(ExecutionContext executionContext) throws ItemStreamException {
+        // 배치가 시작될 때 이 메소드가 호출
+        // 이때 내부의 delegateReader도 같이 'open' 해줘야 DB 연결이 생성
+        log.info(">>>> [SettlementItemReader] Open! 내부 Reader 초기화 시작");
+        delegateReader.open(executionContext);
+    }
+
+    @Override
+    public void update(ExecutionContext executionContext) throws ItemStreamException {
+        delegateReader.update(executionContext);
+    }
+
+    @Override
+    public void close() throws ItemStreamException {
+        log.info(">>>> [SettlementItemReader] Close! 내부 Reader 리소스 정리");
+        delegateReader.close();
     }
 }
