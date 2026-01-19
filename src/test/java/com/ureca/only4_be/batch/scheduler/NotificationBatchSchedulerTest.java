@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @SpringBatchTest
 @ActiveProfiles("local")
-@EmbeddedKafka(partitions = 1, topics = {"billing-notification-topic"})
+@EmbeddedKafka(partitions = 1, topics = {"email.send.request"})
 class NotificationBatchSchedulerTest {
 
     @Autowired
@@ -70,12 +70,12 @@ class NotificationBatchSchedulerTest {
         billRepository.deleteAll();
         memberRepository.deleteAll();
 
-        // 2. 테스트용 데이터 생성 (DB에 넣기)
+        // 테스트용 데이터 생성 (DB에 넣기)
         // 오늘 날짜에 알림을 받아야 하는 멤버와 청구서 생성
         Member member = memberRepository.save(Member.builder()
-                .name("박서연")
-                .email("dkud1@naver.com")
-                .phoneNumber("010-3000-0000").address("인천")
+                .name("쿠로미")
+                .email("d@naver.com")
+                .phoneNumber("010-3000-0000").address("서울")
                 .memberGrade(MemberGrade.VIP).paymentOwnerName("a").paymentName("a").paymentNumber("1").paymentMethod(PaymentMethod.CARD)
                 .notificationDayOfMonth((short)LocalDate.now().getDayOfMonth()) // 오늘 날짜와 일치시켜야 Reader가 읽음
                 .build());
@@ -85,7 +85,7 @@ class NotificationBatchSchedulerTest {
                 .billSendStatus(BillSendStatus.BEFORE_SENT) // 발송 전 상태
                 .totalBilledAmount(BigDecimal.valueOf(50000))
                 .paymentOwnerNameSnapshot("a").paymentNameSnapshot("a").paymentNumberSnapshot("1")
-                .billingYearMonth(LocalDate.now())
+                .billingYearMonth(LocalDate.now().withDayOfMonth(1))
                 .build());
 
         // 3. Kafka Consumer 설정
@@ -96,7 +96,7 @@ class NotificationBatchSchedulerTest {
         DefaultKafkaConsumerFactory<String, String> cf = new DefaultKafkaConsumerFactory<>(
                 props, new StringDeserializer(), new StringDeserializer());
         consumer = cf.createConsumer();
-        embeddedKafkaBroker.consumeFromAnEmbeddedTopic(consumer, "billing-notification-topic");
+        embeddedKafkaBroker.consumeFromAnEmbeddedTopic(consumer, "email.send.request");
     }
 
     @AfterEach
@@ -127,10 +127,13 @@ class NotificationBatchSchedulerTest {
         assertThat(updatedBill.getBillSendStatus()).isEqualTo(BillSendStatus.SENT);
 
         // [Then] 3. Kafka 메시지 수신 검증 -> 메시지가 왔는지 확인
-        ConsumerRecord<String, String> record = KafkaTestUtils.getSingleRecord(consumer, "billing-notification-topic", Duration.ofSeconds(20));
-        assertThat(record.value()).contains("50000"); // 금액 정보 포함 확인
-        assertThat(record.value()).contains("dkud1@naver.com"); // 이메일 포함 확인
+        ConsumerRecord<String, String> record = KafkaTestUtils.getSingleRecord(consumer, "email.send.request", Duration.ofSeconds(20));
+        String messageBody = record.value();
 
-        System.out.println(">>> ✅ 통합 테스트 성공! 수신 메시지: " + record.value());
+        assertThat(messageBody).contains("\"memberId\":");
+        assertThat(messageBody).contains("\"billId\":");
+        assertThat(messageBody).contains(String.valueOf(updatedBill.getId()));
+
+        System.out.println(">>> ✅ 통합 테스트 성공! 수신 메시지: " + messageBody);
     }
 }

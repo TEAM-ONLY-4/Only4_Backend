@@ -9,18 +9,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class BillToNotificationProcessor implements ItemProcessor<Bill, NotificationRequest> {
 
-
     @Override
     public NotificationRequest process(Bill bill) throws Exception {
 
         return NotificationRequest.builder()
                 .billId(bill.getId())
                 .memberId(bill.getMember().getId())
-                .encryptedEmail(bill.getMember().getEmail())
-                .encryptedPhone(bill.getMember().getPhoneNumber())
-                .billingDate(bill.getBillingYearMonth().toString())
-                .totalAmount(bill.getTotalBilledAmount())
-                .ownerName(bill.getPaymentOwnerNameSnapshot())
                 .build();
     }
 }
