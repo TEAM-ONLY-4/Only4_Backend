@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
