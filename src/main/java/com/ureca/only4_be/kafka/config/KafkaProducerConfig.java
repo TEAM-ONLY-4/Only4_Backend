@@ -1,5 +1,6 @@
 package com.ureca.only4_be.kafka.config;
 
+import com.ureca.only4_be.kafka.properties.KafkaTopicsProperties;
 import com.ureca.only4_be.kafka.properties.RetryProperties;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -16,7 +17,7 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
-
+@EnableConfigurationProperties({RetryProperties.class, KafkaTopicsProperties.class}) // 이거 추가 필요!
 @Configuration
 public class KafkaProducerConfig {
     private final RetryProperties retryProperties;
@@ -38,7 +39,7 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5); // 메시지 순서 보장 성능 최적화
         props.put(ProducerConfig.RETRIES_CONFIG, Integer.MAX_VALUE); // 재시도 횟수 (멱등성 보장 위해 무한대)
         props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryProperties.initialIntervalMs()); // 재시도 사이의 대기 시간
-        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, retryProperties.maxIntervalMs()); // 전체 타임아웃 시간
+        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, (int) retryProperties.maxIntervalMs()); // 전체 타임아웃 시간
 
         // 서로 다른 프로젝트 간 JSON 통신 시 패키지 에러 방지
         props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
