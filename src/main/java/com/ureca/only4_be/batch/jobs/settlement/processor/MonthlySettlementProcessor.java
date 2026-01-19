@@ -38,8 +38,6 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourceDto, BillResultDto> {
 
-    private final BillRepository billRepository;
-
     // LTE 표준 요금제 ID 상수
     private static final Long LTE_STANDARD_PLAN_ID = 130L;
 
@@ -47,14 +45,6 @@ public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourc
     public BillResultDto process(SettlementSourceDto item) throws Exception {
         Member member = item.getMember();
         LocalDate targetBillingDate = LocalDate.of(2026, 1, 5); // 현재 하드코딩 된 청구 기준일
-
-        // ==========================================================
-        // ★ [중복 방지 로직] 이미 이번 달 청구서가 만들어졌는지 확인
-        // ==========================================================
-        if (billRepository.existsByMemberAndBillingYearMonth(member, targetBillingDate)) {
-            log.info("[Skip] 회원(ID: {})의 {} 청구서가 이미 존재합니다.", member.getId(), targetBillingDate);
-            return null; // ★ null을 반환하면 Writer로 넘어가지 않고 무시됨 (Insert 안 함)
-        }
 
         List<BillItem> billItems = new ArrayList<>();
 
