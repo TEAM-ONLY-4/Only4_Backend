@@ -55,7 +55,7 @@ public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourc
 //                : LocalDate.now(); // 혹은 기본값
 
         Member member = item.getMember();
-        LocalDate targetBillingDate = LocalDate.of(2026, 1, 5); // 현재 하드코딩 된 청구 기준일
+        LocalDate targetBillingDate = LocalDate.of(2026, 1, 1); // 현재 하드코딩 된 청구 기준일
 
         List<BillItem> billItems = new ArrayList<>();
 
