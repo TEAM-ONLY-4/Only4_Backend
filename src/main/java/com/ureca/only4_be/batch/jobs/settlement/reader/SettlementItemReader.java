@@ -13,17 +13,21 @@ import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemStreamReader;
+import org.springframework.batch.item.ExecutionContext;
+import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Configuration
+@Component
 @RequiredArgsConstructor
 // ★ 변경 1: ItemReader -> ItemStreamReader (Lifecycle 관리 포함)
 public class SettlementItemReader implements ItemStreamReader<SettlementSourceDto> {
@@ -47,8 +51,8 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
                 .name("delegateMemberReader")
                 .entityManagerFactory(entityManagerFactory)
                 .pageSize(100)
-                .queryString("SELECT m FROM Member m WHERE m.status = 'ACTIVE'")
-                // .maxItemCount(1000) // 테스트용 1000명 제한 필요시 주석 해제
+                .queryString("SELECT m FROM Member m")
+                .maxItemCount(50) // 테스트용 1000명 제한 필요시 주석 해제
                 .build();
 
         try {
@@ -123,5 +127,24 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
 
         // 6. 최종 DTO 반환
         return new SettlementSourceDto(member, devices, subDetails, oneTimePurchases);
+    }
+
+    @Override
+    public void open(ExecutionContext executionContext) throws ItemStreamException {
+        // 배치가 시작될 때 이 메소드가 호출
+        // 이때 내부의 delegateReader도 같이 'open' 해줘야 DB 연결이 생성
+        log.info(">>>> [SettlementItemReader] Open! 내부 Reader 초기화 시작");
+        delegateReader.open(executionContext);
+    }
+
+    @Override
+    public void update(ExecutionContext executionContext) throws ItemStreamException {
+        delegateReader.update(executionContext);
+    }
+
+    @Override
+    public void close() throws ItemStreamException {
+        log.info(">>>> [SettlementItemReader] Close! 내부 Reader 리소스 정리");
+        delegateReader.close();
     }
 }
