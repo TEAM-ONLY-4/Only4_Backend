@@ -59,7 +59,7 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
 
     // [Paging] 현재 페이지 위치와 한 번에 가져올 크기(1,000개)
     private int currentPage = 0;
-    private final int PAGE_SIZE = 10000;
+    private final int PAGE_SIZE = 1000;
 
     // [Test Limit] 테스트용 50개 제한 (운영 시 제거 또는 주석 처리)
     private int readCount = 0;
