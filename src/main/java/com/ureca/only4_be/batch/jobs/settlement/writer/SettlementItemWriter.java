@@ -26,31 +26,37 @@ public class SettlementItemWriter implements ItemWriter<BillResultDto> {
     @Override
     @Transactional
     public void write(Chunk<? extends BillResultDto> chunk) throws Exception {
+        // 1. 청구서(Bill) 리스트 추출
+        List<Bill> bills = new ArrayList<>();
         for (BillResultDto dto : chunk) {
-            Bill bill = dto.getBill();
-            List<BillItem> items = dto.getBillItems();
-
-            // 1. Bill 저장 (이때 PK인 id가 생성됨)
-            Bill savedBill = billRepository.save(bill);
-
-            // 2. BillItem에 저장된 Bill 연결 (FK 설정)
-            List<BillItem> readyToSaveItems = new ArrayList<>();
-            for (BillItem item : items) {
-                // Processor에서 만든 BillItem은 bill 필드가 비어있으므로 연결해줘야 함
-                BillItem connectedItem = BillItem.builder()
-                        .bill(savedBill) // ★ FK 연결
-                        .itemCategory(item.getItemCategory())
-                        .itemSubcategory(item.getItemSubcategory())
-                        .itemName(item.getItemName())
-                        .amount(item.getAmount())
-                        .detailSnapshot(item.getDetailSnapshot()) // JSON 데이터
-                        .build();
-                readyToSaveItems.add(connectedItem);
-            }
-
-            // 3. BillItem 일괄 저장
-            billItemRepository.saveAll(readyToSaveItems);
+            bills.add(dto.getBill());
         }
-        log.info("[Writer] 청구서 {}건 저장 완료", chunk.size());
+
+        // 2. Bill 일괄 저장 (Batch Insert)
+        // PostgreSQL Sequence 전략 덕분에, 저장 후 객체에 ID가 즉시 채워짐!
+        // ★ 여기서 쿼리가 1000방 나가는 게 아니라, 1방(또는 소수)으로 뭉쳐서 나감
+        billRepository.saveAll(bills);
+
+        // 3. 저장된 Bill과 BillItem 연결 및 수집
+        List<BillItem> allItems = new ArrayList<>();
+
+        for (BillResultDto dto : chunk) {
+            // dto.getBill()은 위에서 saveAll() 되면서 ID가 채워진 상태 (영속성 컨텍스트 공유)
+            Bill savedBill = dto.getBill();
+
+            for (BillItem item : dto.getBillItems()) {
+                // Processor에서 넘어온 Item은 껍데기만 있으므로, 저장된 Bill과 연결해줌
+                item.setBill(savedBill);
+                allItems.add(item);
+            }
+        }
+
+        // 4. BillItem 일괄 저장 (Batch Insert)
+        // 이것도 쿼리 1000방 -> 1방으로 처리됨
+        if (!allItems.isEmpty()) {
+            billItemRepository.saveAll(allItems);
+        }
+
+        log.info("[Writer] 청구서 {}건, 항목 {}건 저장 완료 (Batch 적용됨)", bills.size(), allItems.size());
     }
 }
