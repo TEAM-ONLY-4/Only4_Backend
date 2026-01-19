@@ -42,6 +42,7 @@ out/
 # --- Sensitive & Local Config (보안/설정) ---
 src/main/resources/application-*.yml
 .env
+src/main/resources/architecture
 
 # --- Docker Data (데이터 절대 올리면 안 됨) ---
 pg_data/
