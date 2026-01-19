@@ -31,20 +31,26 @@ spring:
     template:
       notification-topic: email.send.request
 
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-#      value-serializer: org.apache.kafka.common.serialization.StringSerializer #String
-       # DTO 객체를 보내기 때문에 Json 직렬화가 필요함
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
-
   # 스프링 배치 필수 설정
   batch:
     jdbc:
       initialize-schema: always # 배치 실행에 필요한 메타 테이블(BATCH_JOB_INSTANCE 등)을 자동 생성
     job:
       enabled: false  # 앱 실행될 때 모든 배치가 자동 실행되는 것 방지 (보통 막아둠)
+
+# ==========================================
+# [커스텀 앱 설정]
+# ==========================================
+app:
+  kafka:
+    topics:
+      group-id: only4-consumer-group
+      email-request: email.send.request
+
+    retry: # 재시도 관련 설정
+      email-max-attempts: 3
+      initial-interval-ms: 500 # 재시도 간격의 시작값 / 0.5초 후 첫 재시도
+      max-interval-ms: 30000 # 재시도 간격 상한 / 아무리 커져도 30초를 넘지 않음
 
 # ==========================================
 # [모니터링 & 액추에이터 설정]
