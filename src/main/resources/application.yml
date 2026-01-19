@@ -26,25 +26,26 @@ spring:
         format_sql: true
         default_batch_fetch_size: 1000
 
-  kafka:
-    #@Value로 불러올 사용자 정의
-    template:
-      notification-topic: email.send.request
-
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-#      value-serializer: org.apache.kafka.common.serialization.StringSerializer #String
-       # DTO 객체를 보내기 때문에 Json 직렬화가 필요함
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
-
   # 스프링 배치 필수 설정
   batch:
     jdbc:
       initialize-schema: always # 배치 실행에 필요한 메타 테이블(BATCH_JOB_INSTANCE 등)을 자동 생성
     job:
       enabled: false  # 앱 실행될 때 모든 배치가 자동 실행되는 것 방지 (보통 막아둠)
+
+kafka:
+  topic:
+    notification: email.send.request
+  producer:
+    key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#     value-serializer: org.apache.kafka.common.serialization.StringSerializer #String
+      # DTO 객체를 보내기 때문에 Json 직렬화가 필요함
+    value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    acks: all
+    retries: 3
+    linger-ms: 10         # 메시지가 적어도 10ms는 기다렸다가 모아서 보냄
+
+
 
 # ==========================================
 # [모니터링 & 액추에이터 설정]

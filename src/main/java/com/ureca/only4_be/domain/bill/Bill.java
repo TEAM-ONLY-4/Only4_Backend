@@ -74,4 +74,7 @@ public class Bill extends BaseEntity {
         if (totalDiscountAmount == null) totalDiscountAmount = BigDecimal.ZERO;
         if (totalBilledAmount == null) totalBilledAmount = BigDecimal.ZERO;
     }
+    public void changeStatus(BillSendStatus status) {
+        this.billSendStatus = status;
+    }
 }

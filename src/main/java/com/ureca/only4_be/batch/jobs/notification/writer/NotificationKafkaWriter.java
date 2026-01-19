@@ -19,7 +19,7 @@ public class NotificationKafkaWriter implements ItemWriter<NotificationRequest> 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     // 토픽 이름 yml 주입
-    @Value("${spring.kafka.template.notification-topic}")
+    @Value("${kafka.topic.notification}")
     private String topicName;
 
     @Override
