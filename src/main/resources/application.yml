@@ -24,7 +24,15 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+
+        # 1. 읽기 최적화 (Bulk Fetch) - Reader 성능 향상
         default_batch_fetch_size: 1000
+
+        # 2. 쓰기 최적화 (Bulk Insert) - Writer 성능 향상
+        jdbc:
+          batch_size: 1000        # INSERT를 1000개씩 묶음
+          order_inserts: true     # 같은 INSERT끼리 정렬해서 묶음 효과 극대화
+          order_updates: true     # UPDATE도 정렬
 
   # 스프링 배치 필수 설정
   batch:
