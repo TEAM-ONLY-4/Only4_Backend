@@ -9,5 +9,5 @@ import java.math.BigDecimal;
 public class NotificationRequest {
 
     Long memberId;
-    Long billI;
+    Long billId;
 }
