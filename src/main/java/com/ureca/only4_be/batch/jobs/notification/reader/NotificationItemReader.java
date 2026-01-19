@@ -39,7 +39,9 @@ public class NotificationItemReader {
         LocalDate currentBillingMonth = targetDate.withDayOfMonth(1);//이번 달 청구서만 조회하기 위한 기준
 
         Map<String, Object> parameters = new HashMap<>(); //쿼리문에 들어갈 변수 저장 위치(파라미터로 넘기는 게 보안상 안전)
-        parameters.put("statusList", Arrays.asList(BillSendStatus.BEFORE_SENT, BillSendStatus.FAILED));
+        parameters.put("status1", BillSendStatus.BEFORE_SENT);
+        parameters.put("status2", BillSendStatus.FAILED);
+
         parameters.put("notificationDayOfMonth", (short) targetDay);
         parameters.put("currentTime", nowTime);
         parameters.put("billingMonth", currentBillingMonth);
@@ -51,8 +53,9 @@ public class NotificationItemReader {
                 .queryString(
                         "SELECT b FROM Bill b " +
                         "JOIN FETCH b.member m " + // N+1 방지
-                        "WHERE b.billSendStatus = :statusList " +
-                        "AND m.notificationDayOfMonth <= :notificationDayOfMonth " +// 지난 날짜들 까지 조회 --- 실패처리 ---
+                        "WHERE (b.billSendStatus = :status1 OR b.billSendStatus = :status2) " +
+                        "AND m.notificationDayOfMonth <= :notificationDayOfMonth " +// 지난 날짜들 까지 조회 --- 실패처리
+                        "AND b.billingYearMonth = :billingMonth " +
                         "AND (" +
                         //  금지 시간을 설정하지 않은 사람은 무조건 통과 (NULL 체크)
                         "   (m.doNotDisturbStartTime IS NULL OR m.doNotDisturbEndTime IS NULL) " +
