@@ -7,7 +7,7 @@ spring:
 
   # 공통 설정
   application:
-    name: only4-backend
+    name: only4-be
 
   datasource:
     driver-class-name: org.postgresql.Driver
@@ -46,11 +46,39 @@ spring:
     job:
       enabled: false  # 앱 실행될 때 모든 배치가 자동 실행되는 것 방지 (보통 막아둠)
 
+# ==========================================
+# [모니터링 & 액추에이터 설정]
+# ==========================================
 management:
+  # 1. 엔드포인트 노출
   endpoints:
     web:
       exposure:
-        include: prometheus, health
+        include: prometheus, health, info, metrics, loggers, threaddump, heapdump
+
   endpoint:
     prometheus:
       enabled: true
+    health:
+      show-details: always
+
+  # 메트릭 상세 설정
+  metrics:
+    tags:
+      application: ${spring.application.name} # 태그 부착
+
+    # API 응답 속도(Latency) 분포 수집
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      sla:
+        http.server.requests: 100ms, 500ms, 1s # 1초 넘는 요청 카운팅
+
+    enable:
+      jvm: true
+      process: true
+      system: true
+      hikaricp: true # DB 커넥션 풀 모니터링
+      jdbc: true
+      kafka: true # Kafka 메트릭 수집
+      logback: true # Error 로그 발생 횟수 카운트
