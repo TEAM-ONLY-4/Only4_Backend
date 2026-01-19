@@ -5,7 +5,6 @@ import com.ureca.only4_be.batch.jobs.settlement.dto.SettlementSourceDto;
 import com.ureca.only4_be.batch.jobs.settlement.dto.SubscriptionDetailDto;
 import com.ureca.only4_be.batch.jobs.settlement.common.ProductIdRange;
 import com.ureca.only4_be.domain.bill.Bill;
-import com.ureca.only4_be.domain.bill.BillRepository;
 import com.ureca.only4_be.domain.bill.BillSendStatus;
 import com.ureca.only4_be.domain.bill_item.BillItem;
 import com.ureca.only4_be.domain.bill_item.BillItemCategory;
@@ -24,7 +23,9 @@ import com.ureca.only4_be.domain.subscription_usage.UsageType;
 import com.ureca.only4_be.domain.discount_policy.DiscountMethod;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
@@ -35,26 +36,26 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Configuration
+@StepScope
 @RequiredArgsConstructor
 public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourceDto, BillResultDto> {
-
-    private final BillRepository billRepository;
 
     // LTE 표준 요금제 ID 상수
     private static final Long LTE_STANDARD_PLAN_ID = 130L;
 
+    // JobParameter에서 날짜 받아오기
+    @Value("#{jobParameters['targetDate']}")
+    private String targetDateStr;
+
     @Override
     public BillResultDto process(SettlementSourceDto item) throws Exception {
+        // 받아온 문자열 날짜를 LocalDate로 변환
+//        LocalDate targetBillingDate = (targetDateStr != null)
+//                ? LocalDate.parse(targetDateStr)
+//                : LocalDate.now(); // 혹은 기본값
+
         Member member = item.getMember();
         LocalDate targetBillingDate = LocalDate.of(2026, 1, 5); // 현재 하드코딩 된 청구 기준일
-
-        // ==========================================================
-        // ★ [중복 방지 로직] 이미 이번 달 청구서가 만들어졌는지 확인
-        // ==========================================================
-        if (billRepository.existsByMemberAndBillingYearMonth(member, targetBillingDate)) {
-            log.info("[Skip] 회원(ID: {})의 {} 청구서가 이미 존재합니다.", member.getId(), targetBillingDate);
-            return null; // ★ null을 반환하면 Writer로 넘어가지 않고 무시됨 (Insert 안 함)
-        }
 
         List<BillItem> billItems = new ArrayList<>();
 

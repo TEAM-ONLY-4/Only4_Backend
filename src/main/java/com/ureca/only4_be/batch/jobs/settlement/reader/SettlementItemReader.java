@@ -12,22 +12,24 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
-import org.springframework.context.annotation.Configuration;
+import java.time.LocalDate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@StepScope
 @RequiredArgsConstructor
 // ★ 변경 1: ItemReader -> ItemStreamReader (Lifecycle 관리 포함)
 public class SettlementItemReader implements ItemStreamReader<SettlementSourceDto> {
@@ -42,16 +44,42 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     private final AddonSpecRepository addonSpecRepository;
     private final TvSpecRepository tvPlanSpecRepository;
 
+    // 컨트롤러가 보낸 'targetDate'를 여기서 받아옴! (SpEL 문법)
+    @Value("#{jobParameters['targetDate']}")
+    private String targetDateString;
+
     private JpaPagingItemReader<Member> delegateReader;
 
     // ★ 변경 2: read() 내부가 아니라, 서버 켜질 때 미리 초기화 (@PostConstruct)
     @PostConstruct
     public void init() {
+        // [중요] 필터링 할 기준 날짜 (DB에 저장된 청구서 날짜와 일치해야 함)
+        LocalDate targetDate = LocalDate.of(2026, 1, 5); // 하드 코딩
+
+        // 받아온 문자열 날짜를 LocalDate로 변환
+        // 값이 없으면 기본값 설정하는 로직 추가
+//        LocalDate targetDate = (targetDateString != null)
+//                ? LocalDate.parse(targetDateString)
+//                : LocalDate.of(2026, 1, 5);
+
+        log.info(">>>> [Reader] 설정된 정산 기준일: {}", targetDate);
+
         this.delegateReader = new JpaPagingItemReaderBuilder<Member>()
                 .name("delegateMemberReader")
                 .entityManagerFactory(entityManagerFactory)
                 .pageSize(100)
-                .queryString("SELECT m FROM Member m")
+
+                // ★ [핵심 수정] "Bill 테이블에 내 ID와 저 날짜로 된 데이터가 '없는' 경우만 가져와라"
+                .queryString("SELECT m FROM Member m " +
+                        "WHERE NOT EXISTS (" +
+                        "   SELECT 1 FROM Bill b " +
+                        "   WHERE b.member = m " +
+                        "   AND b.billingYearMonth = :targetDate" +
+                        ")")
+
+                // ★ [핵심 수정] 쿼리 내부의 :targetDate 에 실제 날짜값 전달
+                .parameterValues(Map.of("targetDate", targetDate))
+
                 .maxItemCount(50) // 테스트용 1000명 제한 필요시 주석 해제
                 .build();
 
