@@ -65,6 +65,9 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
+    volumes:
+      # 그라파나 대시보드 설정을 껐다 켜도 유지하기 위해 볼륨 추가
+      - grafana_data:/var/lib/grafana
 
   postgres:
     image: postgres:16-alpine
@@ -81,5 +84,33 @@ services:
       - ./pg_data:/var/lib/postgresql/data
     restart: always
 
+  # PostgreSQL 내부 지표 수집기
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: only4-postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB}?sslmode=disable
+      DATA_SOURCE_USER: ${POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+    restart: always
+
+  # Kafka Broker용 Exporter
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: only4-kafka-exporter
+    depends_on:
+      - kafka
+    ports:
+      - "9308:9308"
+    command:
+      # 내부 통신용 포트(29092)로 브로커에 접속
+      - --kafka.server=kafka:29092
+    restart: always
+
 volumes:
   kafka_data:
+  grafana_data: # 그라파나 데이터 영구 저장소
