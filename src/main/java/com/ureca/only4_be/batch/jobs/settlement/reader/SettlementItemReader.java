@@ -66,7 +66,7 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     // ★ [테스트용 제한 설정]
     // 운영(Production) 배포 시에는 주석 처리
     private int totalReadCount = 0;
-    private final int TEST_LIMIT = 100000;
+    private final int TEST_LIMIT = 10000;
 
     // ==========================================
     // 3. Main Logic (read)
@@ -105,7 +105,7 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
         // 들어온 날짜가 1월 20일이든 5일이든, 무조건 "그 달의 1일"로 바꿈
         LocalDate parsedDate = (targetDateString != null)
                 ? LocalDate.parse(targetDateString)
-                : LocalDate.of(2026, 1, 5); // 기본값
+                : LocalDate.of(2026, 1, 1); // 기본값
 
         LocalDate targetDate = parsedDate.withDayOfMonth(1);
 
