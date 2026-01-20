@@ -1,4 +1,4 @@
-package com.ureca.only4_be.controller;
+package com.ureca.only4_be.batch.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
