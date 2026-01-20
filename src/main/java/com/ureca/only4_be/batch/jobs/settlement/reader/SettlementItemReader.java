@@ -98,9 +98,17 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     // 4. Bulk Fetch Logic (fillBuffer)
     // ==========================================
     private void fillBuffer() {
-        LocalDate targetDate = (targetDateString != null)
+        // 기존 코드
+        // LocalDate targetDate = (targetDateString != null)
+        //        ? LocalDate.parse(targetDateString)
+        //        : LocalDate.of(2026, 1, 5);
+
+        // ★ 수정된 코드: 들어온 날짜가 1월 20일이든 5일이든, 무조건 "그 달의 1일"로 바꿈
+        LocalDate parsedDate = (targetDateString != null)
                 ? LocalDate.parse(targetDateString)
-                : LocalDate.of(2026, 1, 5);
+                : LocalDate.of(2026, 1, 5); // 기본값
+
+        LocalDate targetDate = parsedDate.withDayOfMonth(1);
 
         log.info(">>>> [Reader] Bulk Fetch 시작 (Page: {}, Date: {})", currentPage, targetDate);
 
