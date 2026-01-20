@@ -63,7 +63,7 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
 
     // [Test Limit] 테스트용 50개 제한 (운영 시 제거 또는 주석 처리)
     private int readCount = 0;
-    private final int MAX_ITEM_COUNT = 100;
+    private final int MAX_ITEM_COUNT = 2000;
 
     // ==========================================
     // 3. Main Logic (read)
