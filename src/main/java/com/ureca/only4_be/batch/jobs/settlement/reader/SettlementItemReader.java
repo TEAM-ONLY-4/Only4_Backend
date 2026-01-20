@@ -54,40 +54,44 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     @Value("#{jobParameters['targetDate']}")
     private String targetDateString; // 컨트롤러가 넘겨준 날짜
 
-    // [Buffer] DB에서 떼온 1,000명분 데이터를 잠시 보관하는 창고
+    // [Buffer] 데이터를 잠시 보관하는 큐
     private final Queue<SettlementSourceDto> buffer = new LinkedList<>();
 
-    // [Paging] 현재 페이지 위치와 한 번에 가져올 크기(1,000개)
-    private int currentPage = 0;
+    // ★ [Cursor] 마지막으로 읽은 ID (0부터 시작)
+    private Long lastId = 0L;
+
+    // 한 번에 가져올 개수 (Chunk Size와 맞춰주는 게 좋음)
     private final int PAGE_SIZE = 1000;
 
-    // [Test Limit] 테스트용 50개 제한 (운영 시 제거 또는 주석 처리)
-    private int readCount = 0;
-    private final int MAX_ITEM_COUNT = 2000;
+    // ★ [테스트용 제한 설정]
+    // 운영(Production) 배포 시에는 주석 처리
+    private int totalReadCount = 0;
+    private final int TEST_LIMIT = 100000;
 
     // ==========================================
     // 3. Main Logic (read)
     // ==========================================
     @Override
     public SettlementSourceDto read() throws Exception {
-        // [안전장치] 테스트용 50개 제한 확인
-        if (readCount >= MAX_ITEM_COUNT) {
-            log.info(">>>> [Reader] 테스트 제한({}개)에 도달하여 배치를 정상 종료합니다.", MAX_ITEM_COUNT);
-            return null; // null 반환 시 배치 종료
+
+        // [테스트 제한 체크]
+        if (totalReadCount >= TEST_LIMIT) {
+            log.info(">>>> [Reader] 테스트 제한({}명)에 도달하여 배치를 종료합니다.", TEST_LIMIT);
+            return null;
         }
 
         // [A] 창고(Buffer)에 데이터가 있으면? -> 하나 꺼내서 리턴 (DB 접근 X, 초고속)
         if (!buffer.isEmpty()) {
-            readCount++;
+            totalReadCount++; // 읽은 개수 증가
             return buffer.poll();
         }
 
-        // [B] 창고가 비었으면? -> 도매상 모드 발동! DB에서 1,000개 떼오기
+        // [B] 버퍼 비었으면 DB 조회 (Bulk Fetch)
         fillBuffer();
 
         // [C] 채워왔는데도 없으면? -> 진짜 데이터가 바닥난 것 -> 종료
         if (!buffer.isEmpty()) {
-            readCount++;
+            totalReadCount++; // 읽은 개수 증가
             return buffer.poll();
         }
 
@@ -98,35 +102,47 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     // 4. Bulk Fetch Logic (fillBuffer)
     // ==========================================
     private void fillBuffer() {
-        // 기존 코드
-        // LocalDate targetDate = (targetDateString != null)
-        //        ? LocalDate.parse(targetDateString)
-        //        : LocalDate.of(2026, 1, 5);
-
-        // ★ 수정된 코드: 들어온 날짜가 1월 20일이든 5일이든, 무조건 "그 달의 1일"로 바꿈
+        // 들어온 날짜가 1월 20일이든 5일이든, 무조건 "그 달의 1일"로 바꿈
         LocalDate parsedDate = (targetDateString != null)
                 ? LocalDate.parse(targetDateString)
                 : LocalDate.of(2026, 1, 5); // 기본값
 
         LocalDate targetDate = parsedDate.withDayOfMonth(1);
 
-        log.info(">>>> [Reader] Bulk Fetch 시작 (Page: {}, Date: {})", currentPage, targetDate);
+        // ★ 테스트 제한에 거의 도달했다면? (성능 최적화)
+        // 예: 1990명 읽었고 2000명 제한인데, 굳이 1000개를 더 퍼올 필요 없음.
+        // 남은 개수만큼만 가져오도록 PAGE_SIZE 조절
+        int remaining = TEST_LIMIT - totalReadCount;
+        int currentFetchSize = Math.min(PAGE_SIZE, remaining);
+
+        if (currentFetchSize <= 0) return; // 이미 다 채웠으면 조회 X
+
+        log.info(">>>> [Reader] 커서 조회 시작 (LastId: {}, Date: {})", lastId, targetDate);
 
         // -------------------------------------------------------
-        // Step 1. [회원 조회] (페이징)
-        // 청구서가 '없는' 회원 1,000명만 딱 잘라서 가져옵니다.
+        // Step 1. [회원 조회]
         // -------------------------------------------------------
-        Pageable pageable = PageRequest.of(currentPage, PAGE_SIZE);
-        Slice<Member> memberSlice = memberRepository.findMembersWithoutBill(targetDate, pageable);
+
+        // ★ 무조건 0페이지 (Offset을 안 씀)
+        // Offset으로 건너뛰는 게 아니라, WHERE id > lastId 조건으로 건너뜀
+        // PageRequest는 오직 "LIMIT 1000"의 역할만 함.
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
+
+        // ★ 커서 쿼리 실행 (id > lastId)
+        Slice<Member> memberSlice = memberRepository.findMembersByCursor(lastId, targetDate, pageable);
         List<Member> members = memberSlice.getContent();
 
         if (members.isEmpty()) {
             return; // 더 이상 처리할 회원이 없음
         }
 
+        // ★ 커서 업데이트 (다음 조회를 위해)
+        // 이번에 가져온 목록 중 "가장 마지막 회원의 ID"를 기억해둠.
+        // 다음 턴에는 이 ID보다 큰 녀석들부터 가져오게 됨.
+        lastId = members.get(members.size() - 1).getId();
+
         // -------------------------------------------------------
         // Step 2. [ID 추출]
-        // 찾아온 1,000명의 ID만 뽑아서 리스트로 만듭니다. (IN 절에 쓰려고)
         // -------------------------------------------------------
         List<Long> memberIds = members.stream().map(Member::getId).toList();
 
@@ -210,9 +226,6 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
             // 최종 DTO 생성 후 버퍼에 적재
             buffer.add(new SettlementSourceDto(member, myDevices, subDetails, myOtps));
         }
-
-        // 다음 1,000명을 위해 페이지 번호 증가
-        currentPage++;
     }
 
     // ==========================================
@@ -221,8 +234,8 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
         // 배치가 시작될 때 변수 초기화
-        readCount = 0;
-        currentPage = 0;
+        totalReadCount = 0; // 읽은 개수 초기화
+        lastId = 0L;   // ★ 커서 0으로 초기화
         buffer.clear();
         log.info(">>>> [SettlementItemReader] 리소스 초기화 완료");
     }

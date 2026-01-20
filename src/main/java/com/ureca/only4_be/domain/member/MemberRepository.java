@@ -18,7 +18,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             "   WHERE b.member = m " +
             "   AND b.billingYearMonth = :targetDate" +
             ") " +
-            "ORDER BY m.id ASC") // ID 순서대로 정렬 
+            "ORDER BY m.id ASC") // ID 순서대로 정렬
     Slice<Member> findMembersByCursor(
             @Param("lastId") Long lastId,
             @Param("targetDate") LocalDate targetDate,
