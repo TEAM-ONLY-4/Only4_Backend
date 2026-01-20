@@ -6,11 +6,10 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Slf4j
 @Component
@@ -18,24 +17,33 @@ import java.time.LocalDateTime;
 public class BatchScheduler {
 
     private final JobLauncher jobLauncher;
-    private final JobRegistry jobRegistry;
+    private final Job settlementJob;
 
-    // 테스트용: 10초마다 실행 (로그 확인 후 주석 처리)
-    // @Scheduled(cron = "0/10 * * * * *")
-    // 실제 운영용: 매월 1일 새벽 4시 -> @Scheduled(cron = "0 0 4 1 * *")
-    public void runMonthlySettlement() {
+    /**
+     * [스케줄링 패턴]
+     * cron = "초 분 시 일 월 요일"
+     * "0 0 4 * * *" -> 매일 새벽 4시 0분 0초에 실행
+     * (테스트할 때는 "0/10 * * * * *" 로 바꿔서 10초마다 도는지 확인)
+     */
+    @Scheduled(cron = "0 0 0 1 * *")
+    public void runSettlementJob() {
         try {
-            log.info("[Scheduler] 정산 배치 자동 실행 시작");
-            Job job = jobRegistry.getJob("settlementJob");
+            log.info(">>>> [Scheduler] 정산 배치 스케줄러 실행 시작");
 
+            // 1. Job Parameter 생성
+            // targetDate: 오늘 날짜로 실행
+            // time: 중복 실행 방지용 (이게 없으면 하루에 한 번만 실행됨 -> 테스트할 때 불편)
             JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("date", LocalDateTime.now().toString())
+                    .addString("targetDate", LocalDate.now().toString())
                     .addLong("time", System.currentTimeMillis())
                     .toJobParameters();
 
-            jobLauncher.run(job, jobParameters);
+            // 2. Job 실행
+            jobLauncher.run(settlementJob, jobParameters);
+
+            log.info(">>>> [Scheduler] 정산 배치 로직 수행 완료 (Job Finished)");
         } catch (Exception e) {
-            log.error("[Scheduler] 배치 실행 중 에러 발생", e);
+            log.error(">>>> [Scheduler] 정산 배치 실행 중 에러 발생", e);
         }
     }
 }
