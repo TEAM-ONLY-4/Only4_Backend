@@ -15,6 +15,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             "   SELECT 1 FROM Bill b " +
             "   WHERE b.member = m " +
             "   AND b.billingYearMonth = :targetDate" +
-            ")")
+            ") " +
+            "ORDER BY m.id ASC")
     Slice<Member> findMembersWithoutBill(@Param("targetDate") LocalDate targetDate, Pageable pageable);
 }
