@@ -21,18 +21,19 @@ import com.ureca.only4_be.domain.subscription_discount.SubscriptionDiscount;
 import com.ureca.only4_be.domain.subscription_usage.SubscriptionUsage;
 import com.ureca.only4_be.domain.subscription_usage.UsageType;
 import com.ureca.only4_be.domain.discount_policy.DiscountMethod;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
+import java.time.temporal.TemporalAdjusters;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+
 
 @Slf4j
 @Component
@@ -43,19 +44,31 @@ public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourc
     // LTE 표준 요금제 ID 상수
     private static final Long LTE_STANDARD_PLAN_ID = 130L;
 
-    // JobParameter에서 날짜 받아오기
+    // 1. JobParameter로 날짜 문자열 받기
     @Value("#{jobParameters['targetDate']}")
-    private String targetDateStr;
+    private String targetDateString;
+
+    // 2. 변환된 날짜를 저장해둘 변수
+    private LocalDate targetDate;
+
+    // 3. [초기화] 딱 한 번만 실행됨 (성능 최적화)
+    // Processor가 생성되고 의존성 주입이 끝난 직후 실행
+    @PostConstruct
+    public void init() {
+        LocalDate parsedDate = (targetDateString != null)
+                ? LocalDate.parse(targetDateString)
+                : LocalDate.of(2026, 1, 1); // 기본값 설정
+
+        // 무조건 1일로 고정해서 저장
+        this.targetDate = parsedDate.withDayOfMonth(1);
+
+        log.info(">>>> [Processor] 기준 날짜 설정 완료: {}", this.targetDate);
+    }
 
     @Override
     public BillResultDto process(SettlementSourceDto item) throws Exception {
-        // 받아온 문자열 날짜를 LocalDate로 변환
-//        LocalDate targetBillingDate = (targetDateStr != null)
-//                ? LocalDate.parse(targetDateStr)
-//                : LocalDate.now(); // 혹은 기본값
 
         Member member = item.getMember();
-        LocalDate targetBillingDate = LocalDate.of(2026, 1, 1); // 현재 하드코딩 된 청구 기준일
 
         List<BillItem> billItems = new ArrayList<>();
 
@@ -207,8 +220,8 @@ public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourc
         // 4. 최종 청구서 생성
         // ------------------------------------------------------
 
-        // 미납금 랜덤 (0 ~ 10,000원)
-        BigDecimal unpaidAmount = BigDecimal.valueOf(ThreadLocalRandom.current().nextInt(0, 10001));
+        // 미납금 0원
+        BigDecimal unpaidAmount = BigDecimal.ZERO;
 
         // 총 사용 금액 - 총 할인 금액 = 할인 적용 후 금액
         BigDecimal discountedAmount = totalUsageAmount.subtract(totalDiscountAmount);
@@ -226,14 +239,16 @@ public class MonthlySettlementProcessor implements ItemProcessor<SettlementSourc
 
         Bill bill = Bill.builder()
                 .member(member)
-                .billingYearMonth(targetBillingDate)
+                .billingYearMonth(targetDate)
                 .totalAmount(totalUsageAmount)
                 .vat(vat)
                 .unpaidAmount(unpaidAmount)
                 .totalDiscountAmount(totalDiscountAmount)
                 .totalBilledAmount(totalBilledAmount)
-                .dueDate(LocalDate.of(2026, 1, 31))
-                .approvalExpectedDate(LocalDate.of(2026, 1, 31))
+                // 1. 이번 달 말일 (자동 계산)
+                .dueDate(targetDate.with(TemporalAdjusters.lastDayOfMonth()))
+                // 2. 다음 달 20일
+                .approvalExpectedDate(targetDate.plusMonths(1).withDayOfMonth(20))
                 .billSendStatus(BillSendStatus.BEFORE_SENT)
                 .paymentOwnerNameSnapshot(member.getPaymentOwnerName())
                 .paymentNameSnapshot(member.getPaymentName())
