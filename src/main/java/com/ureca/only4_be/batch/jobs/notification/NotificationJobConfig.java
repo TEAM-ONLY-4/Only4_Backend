@@ -1,6 +1,8 @@
 package com.ureca.only4_be.batch.jobs.notification;
 
+import com.ureca.only4_be.batch.jobs.notification.listener.JobLoggingListener;
 import com.ureca.only4_be.batch.jobs.notification.listener.NotificationSkipListener;
+import com.ureca.only4_be.batch.jobs.notification.validator.DateJobParameterValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -18,10 +20,13 @@ public class NotificationJobConfig {
     private final Step notificationStep;
 
     @Bean
-    public Job notificationJob() {
+    public Job notificationJob(JobLoggingListener jobLoggingListener) {
         return new JobBuilder("notificationJob", jobRepository)
                 .start(notificationStep) // Step 시작
-                .incrementer(new RunIdIncrementer()) //테스트시 코드
+                // 검증기 추가: requestDate가 올바른지 확인
+                .validator(new DateJobParameterValidator())
+                // 모니터링 리스너 등록
+                .listener(jobLoggingListener)
                 .build();
     }
 }
