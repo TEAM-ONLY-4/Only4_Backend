@@ -17,11 +17,9 @@ public interface BillNotificationRepository extends JpaRepository<BillNotificati
      * Kafka 전송 완료 후, 상태를 PENDING -> PUBLISHING(또는 SENT)으로 변경
      */
     @Modifying(clearAutomatically = true)// 벌크 연산 후 영속성 컨텍스트 초기화
-    @Query("UPDATE BillNotification bn" +
-            "SET bn.publishStatus = 'PUBLISHING'+" +
-            "    bn.processStartTime = :now, "+// 처리 시작/완료 시간 갱신
+    @Query("UPDATE BillNotification bn " +
+            "SET bn.publishStatus = :status " +
             "WHERE bn.id IN :ids")
     void updatePublishStatus(@Param("ids") List<Long> ids,
-                             @Param("status") PublishStatus status,
-                             @Param("now") LocalDateTime now);
+                             @Param("status") PublishStatus status);
 }

@@ -2,10 +2,11 @@ package com.ureca.only4_be.batch.jobs.notification.step;
 
 import com.ureca.only4_be.batch.jobs.notification.dto.NotificationRequest;
 import com.ureca.only4_be.batch.jobs.notification.listener.NotificationSkipListener;
-import com.ureca.only4_be.batch.jobs.notification.processor.BillToNotificationProcessor;
-import com.ureca.only4_be.batch.jobs.notification.writer.BillStatusUpdateWriter;
+import com.ureca.only4_be.batch.jobs.notification.processor.NotificationPublishProcessor;
+import com.ureca.only4_be.batch.jobs.notification.writer.NotificationStatusUpdateWriter;
 import com.ureca.only4_be.batch.jobs.notification.writer.NotificationKafkaWriter;
 import com.ureca.only4_be.domain.bill.Bill;
+import com.ureca.only4_be.domain.bill_notification.BillNotification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.repository.JobRepository;
@@ -22,19 +23,19 @@ import java.util.concurrent.TimeoutException;
 
 @Configuration
 @RequiredArgsConstructor
-public class NotificationStepConfig {
+public class NotificationStep2Config {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final JpaPagingItemReader<Bill> notificationReader;
-    private final BillToNotificationProcessor notificationProcessor;
+    private final JpaPagingItemReader<BillNotification> notificationReader;
+    private final NotificationPublishProcessor notificationProcessor;
     private final NotificationKafkaWriter notificationKafkaWriter;
-    private final BillStatusUpdateWriter billStatusUpdateWriter;
+    private final NotificationStatusUpdateWriter billStatusUpdateWriter;
     private final NotificationSkipListener notificationSkipListener; // 리스너 주입
 
     @Bean
-    public Step notificationStep() {
-        return new StepBuilder("notificationStep", jobRepository)
-                .<Bill, NotificationRequest>chunk(1000, transactionManager)
+    public Step step2Publishing() {
+        return new StepBuilder("step2Publishing", jobRepository)
+                .<BillNotification, NotificationRequest>chunk(1000, transactionManager)
                 .reader(notificationReader)
                 .processor(notificationProcessor)
                 .writer(compositeWriter())

@@ -2,6 +2,7 @@ package com.ureca.only4_be.domain.bill_notification;
 
 import com.ureca.only4_be.domain.bill.Bill;
 import com.ureca.only4_be.domain.common.BaseEntity;
+import com.ureca.only4_be.domain.member.Member;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -44,4 +45,9 @@ public class BillNotification extends BaseEntity {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "send_status", nullable = false, columnDefinition = "send_status_enum")
     private SendStatus sendStatus;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "member_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_bill_notification_to_member"))
+    private Member member;
 }

@@ -10,8 +10,9 @@ import org.springframework.stereotype.Component;
 public class StagingProcessor implements ItemProcessor<Bill, BillNotification> {
 
     @Override
-    public BillNotification process(Bill bill) {
+    public BillNotification process(Bill bill) throws Exception {
         return BillNotification.builder()
+                .member(bill.getMember())
                 .bill(bill)
                 .channel(BillChannel.EMAIL)
                 .publishStatus(PublishStatus.PENDING)
