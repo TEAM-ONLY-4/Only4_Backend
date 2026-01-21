@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 @Builder
 public class NotificationRequest {
 
+    Long notificationId;
     Long memberId;
     Long billId;
 }
