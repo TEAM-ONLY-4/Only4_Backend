@@ -59,6 +59,7 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
 
     // ★ [Cursor] 마지막으로 읽은 ID (0부터 시작)
     private Long lastId = 0L;
+    private static final String LAST_ID_KEY = "lastId"; // 세이브 파일에 적을 변수명
 
     // 한 번에 가져올 개수 (Chunk Size와 맞춰주는 게 좋음)
     private final int PAGE_SIZE = 1000;
@@ -233,22 +234,31 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     // ==========================================
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
-        // 배치가 시작될 때 변수 초기화
-        totalReadCount = 0; // 읽은 개수 초기화
-        lastId = 0L;   // ★ 커서 0으로 초기화
+        // 1. 배치가 시작될 때 리소스 초기화
         buffer.clear();
-        log.info(">>>> [SettlementItemReader] 리소스 초기화 완료");
+        totalReadCount = 0; // 읽은 개수 초기화
+
+        // 2. [LOAD] 저장된 기록이 있는지 확인
+        if (executionContext.containsKey(LAST_ID_KEY)) {
+            this.lastId = executionContext.getLong(LAST_ID_KEY);
+            log.info(">>>> [RESTART] 지난번 중단 지점(ID: {})부터 다시 시작합니다.", lastId);
+        } else {
+            this.lastId = 0L;
+            log.info(">>>> [START] 처음부터 시작합니다. (ID: 0)");
+        }
     }
 
     @Override
     public void update(ExecutionContext executionContext) throws ItemStreamException {
-        // 상태 저장 필요 시 구현
+        // [SAVE] 청크가 끝날 때마다 현재까지 읽은 마지막 ID를 기록
+        executionContext.putLong(LAST_ID_KEY, lastId);
+        log.debug(">>>> [SAVE] 상태 저장: lastId={}", lastId);
     }
 
     @Override
     public void close() throws ItemStreamException {
         // 리소스 정리
         buffer.clear();
-        log.info(">>>> [SettlementItemReader] 리소스 정리 완료");
+        log.info(">>>> [CLOSE] 리소스 정리 완료");
     }
 }
