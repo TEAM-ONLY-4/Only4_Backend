@@ -8,6 +8,9 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -22,6 +25,13 @@ public class NotificationKafkaWriter implements ItemWriter<NotificationRequest> 
             emailKafkaProducer.send(request);
         }
 
-        log.info(">>> 🚀 [KafkaWriter] {} 건의 청구서 메시지를 Kafka로 전송했습니다.", chunk.size());
+        // 2. 로그 기록 (어떤 ID들이 전송되었는지 명시)
+        if (log.isInfoEnabled()) {
+            List<Long> ids = chunk.getItems().stream()
+                    .map(NotificationRequest::getNotificationId) // notificationId 로깅
+                    .collect(Collectors.toList());
+
+            log.info(">>> 🚀 [KafkaWriter] Kafka 전송 완료 ({}건): IDs={}", chunk.size(), ids);
+        }
     }
 }
