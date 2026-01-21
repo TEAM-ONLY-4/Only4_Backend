@@ -47,7 +47,7 @@ public class StagingItemReader {
                 .queryString(
                         "SELECT b FROM Bill b" +
                         "JOIN FETCH b.member m "+
-                        "LEFT JOIN BillingNotification bn ON b.id = bn.billingId " +
+                        "LEFT JOIN BillNotification bn ON bn.bill = b" + //객체연관관계 조회
                         "WHERE b.billingYearMonth = :targetBillingMonth" + //이번 달 청구서 중에서
                         "AND bn.id IS NULL"+ // 1. 알림 테이블에 아예 없는 것만 가져오기
                         "AND m.notificationDayOfMonth <= :today" +
