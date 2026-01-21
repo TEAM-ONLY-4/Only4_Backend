@@ -20,7 +20,6 @@ import org.springframework.batch.item.ItemStreamException;
 import java.time.LocalDate;
 
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@StepScope
+@StepScope // 스레드마다 별도의 Reader 객체를 생성하게 함
 @RequiredArgsConstructor
 // ★ 변경 1: ItemReader -> ItemStreamReader (Lifecycle 관리 포함)
 public class SettlementItemReader implements ItemStreamReader<SettlementSourceDto> {
@@ -54,48 +53,40 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     @Value("#{jobParameters['targetDate']}")
     private String targetDateString; // 컨트롤러가 넘겨준 날짜
 
-    // [Buffer] 데이터를 잠시 보관하는 큐
+    // ★ Partitioner가 넣어준 값 주입받기
+    @Value("#{stepExecutionContext['minId']}")
+    private Long minId;
+
+    @Value("#{stepExecutionContext['maxId']}")
+    private Long maxId;
+
+    private Long lastId = 0L; // 커서
+
+    private static final String LAST_ID_KEY = "lastId";
+    private int totalReadCount = 0; // 로깅용 혹은 제한용
+
+    // 파싱된 기준 날짜 (open에서 초기화)
+    private LocalDate targetDate;
+
     private final Queue<SettlementSourceDto> buffer = new LinkedList<>();
-
-    // ★ [Cursor] 마지막으로 읽은 ID (0부터 시작)
-    private Long lastId = 0L;
-    private static final String LAST_ID_KEY = "lastId"; // 세이브 파일에 적을 변수명
-
-    // 한 번에 가져올 개수 (Chunk Size와 맞춰주는 게 좋음)
     private final int PAGE_SIZE = 1000;
-
-    // ★ [테스트용 제한 설정]
-    // 운영(Production) 배포 시에는 주석 처리
-    private int totalReadCount = 0;
-    private final int TEST_LIMIT = 100000;
 
     // ==========================================
     // 3. Main Logic (read)
     // ==========================================
     @Override
     public SettlementSourceDto read() throws Exception {
-
-        // [테스트 제한 체크]
-        if (totalReadCount >= TEST_LIMIT) {
-            log.info(">>>> [Reader] 테스트 제한({}명)에 도달하여 배치를 종료합니다.", TEST_LIMIT);
-            return null;
-        }
-
-        // [A] 창고(Buffer)에 데이터가 있으면? -> 하나 꺼내서 리턴 (DB 접근 X, 초고속)
         if (!buffer.isEmpty()) {
-            totalReadCount++; // 읽은 개수 증가
+            totalReadCount++;
             return buffer.poll();
         }
 
-        // [B] 버퍼 비었으면 DB 조회 (Bulk Fetch)
         fillBuffer();
 
-        // [C] 채워왔는데도 없으면? -> 진짜 데이터가 바닥난 것 -> 종료
         if (!buffer.isEmpty()) {
-            totalReadCount++; // 읽은 개수 증가
+            totalReadCount++;
             return buffer.poll();
         }
-
         return null;
     }
 
@@ -103,43 +94,28 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     // 4. Bulk Fetch Logic (fillBuffer)
     // ==========================================
     private void fillBuffer() {
-        // 들어온 날짜가 1월 20일이든 5일이든, 무조건 "그 달의 1일"로 바꿈
-        LocalDate parsedDate = (targetDateString != null)
-                ? LocalDate.parse(targetDateString)
-                : LocalDate.of(2026, 1, 1); // 기본값
-
-        LocalDate targetDate = parsedDate.withDayOfMonth(1);
-
-        // ★ 테스트 제한에 거의 도달했다면? (성능 최적화)
-        // 예: 1990명 읽었고 2000명 제한인데, 굳이 1000개를 더 퍼올 필요 없음.
-        // 남은 개수만큼만 가져오도록 PAGE_SIZE 조절
-        int remaining = TEST_LIMIT - totalReadCount;
-        int currentFetchSize = Math.min(PAGE_SIZE, remaining);
-
-        if (currentFetchSize <= 0) return; // 이미 다 채웠으면 조회 X
-
-        log.info(">>>> [Reader] 커서 조회 시작 (LastId: {}, Date: {})", lastId, targetDate);
-
-        // -------------------------------------------------------
-        // Step 1. [회원 조회]
-        // -------------------------------------------------------
-
-        // ★ 무조건 0페이지 (Offset을 안 씀)
-        // Offset으로 건너뛰는 게 아니라, WHERE id > lastId 조건으로 건너뜀
-        // PageRequest는 오직 "LIMIT 1000"의 역할만 함.
-        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
-
-        // ★ 커서 쿼리 실행 (id > lastId)
-        Slice<Member> memberSlice = memberRepository.findMembersByCursor(lastId, targetDate, pageable);
-        List<Member> members = memberSlice.getContent();
-
-        if (members.isEmpty()) {
-            return; // 더 이상 처리할 회원이 없음
+        // [초기화] 커서가 아직 세팅 안 됐다면(0), 할당받은 minId 바로 앞번호로 설정
+        if (lastId == 0L) {
+            lastId = minId - 1;
         }
 
-        // ★ 커서 업데이트 (다음 조회를 위해)
-        // 이번에 가져온 목록 중 "가장 마지막 회원의 ID"를 기억해둠.
-        // 다음 턴에는 이 ID보다 큰 녀석들부터 가져오게 됨.
+        // 이미 내 구역 끝(maxId)까지 다 읽었으면 조회 중단
+        if (lastId >= maxId) {
+            return;
+        }
+
+        // targetDate를 인자로 전달
+        Slice<Member> memberSlice = memberRepository.findMembersByCursorWithRangeAndFilter(
+                lastId,
+                maxId,
+                targetDate, // 중복 방지용 날짜
+                PageRequest.of(0, PAGE_SIZE)
+        );
+
+        List<Member> members = memberSlice.getContent();
+        if (members.isEmpty()) return;
+
+        // 커서 업데이트 (다음 조회 시작점)
         lastId = members.get(members.size() - 1).getId();
 
         // -------------------------------------------------------
@@ -234,17 +210,22 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     // ==========================================
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
-        // 1. 배치가 시작될 때 리소스 초기화
+        // 리소스 초기화
         buffer.clear();
-        totalReadCount = 0; // 읽은 개수 초기화
+        totalReadCount = 0;
 
-        // 2. [LOAD] 저장된 기록이 있는지 확인
+        // 날짜 파싱을 여기서 수행
+        this.targetDate = (targetDateString != null)
+                ? LocalDate.parse(targetDateString).withDayOfMonth(1)
+                : LocalDate.of(2026, 1, 1);
+
+        // 상태 복원 (재시작 시)
         if (executionContext.containsKey(LAST_ID_KEY)) {
             this.lastId = executionContext.getLong(LAST_ID_KEY);
-            log.info(">>>> [RESTART] 지난번 중단 지점(ID: {})부터 다시 시작합니다.", lastId);
+            log.info(">>>> [RESTART] 파티션(min: {}, max: {}) - ID {}부터 다시 시작", minId, maxId, lastId);
         } else {
-            this.lastId = 0L;
-            log.info(">>>> [START] 처음부터 시작합니다. (ID: 0)");
+            this.lastId = 0L; // 초기화 (실제 값은 fillBuffer에서 minId - 1로 설정됨)
+            log.info(">>>> [START] 파티션(min: {}, max: {}) 시작", minId, maxId);
         }
     }
 
