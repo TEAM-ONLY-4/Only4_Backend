@@ -3,10 +3,11 @@ package com.ureca.only4_be.batch.jobs.notification.reader;
 import com.ureca.only4_be.domain.bill.Bill;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
+
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -23,7 +24,7 @@ public class StagingItemReader {
 
     @Bean
     @StepScope
-    public JpaPagingItemReader<Bill> notificationDataStagingReader(
+    public JpaPagingItemReader<Bill> notificationStagingReader(
             // 배치 실행 시 파라미터로 '청구년월'을 받기
             @Value("#{jobParameters['billingDate']}") String billingDateStr
     ){
@@ -38,7 +39,7 @@ public class StagingItemReader {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("tody", (short) todayDay);
         parameters.put("currentTime", nowTime);
-        parameters.put("targerBillingMonth", targetBillingMonth);
+        parameters.put("targetBillingMonth", targetBillingMonth);
 
         return new JpaPagingItemReaderBuilder<Bill>()
                 .name("notificationStatingReader")
