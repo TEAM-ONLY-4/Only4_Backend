@@ -240,6 +240,7 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     public void close() throws ItemStreamException {
         // 리소스 정리
         buffer.clear();
-        log.info(">>>> [CLOSE] 리소스 정리 완료");
+        log.info(">>>> [CLOSE] 파티션 종료 (구역: {} ~ {}, 처리 건수: {}건, LastId: {})",
+                minId, maxId, totalReadCount, lastId);
     }
 }
