@@ -30,8 +30,18 @@ public class BillNotification extends BaseEntity {
     @Column(name = "channel", nullable = false, columnDefinition = "bill_channel_enum")
     private BillChannel channel;
 
+//    @Enumerated(EnumType.STRING)
+//    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+//    @Column(name = "send_status", nullable = false, columnDefinition = "bill_notification_status_enum")
+//    private BillNotificationStatus sendStatus;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "send_status", nullable = false, columnDefinition = "bill_notification_status_enum")
-    private BillNotificationStatus sendStatus;
+    @Column(name = "publish_status", nullable = false, columnDefinition = "publish_status_enum")
+    private PublishStatus publishStatus;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "send_status", nullable = false, columnDefinition = "send_status_enum")
+    private SendStatus sendStatus;
 }
