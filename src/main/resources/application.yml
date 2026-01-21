@@ -12,7 +12,7 @@ spring:
   datasource:
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20 # 스레드 개수(10)보다 넉넉하게
+      maximum-pool-size: 15
 
   flyway:
     enabled: true

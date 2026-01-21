@@ -33,6 +33,7 @@ public class SettlementPartitioner implements Partitioner {
 
         // 2. 한 파티션당 처리할 개수 계산
         // 예: (100 - 1) / 10 + 1 = 10개씩
+        // 전체 100만 개, gridSize = 10 이라면 100,000
         long targetSize = (maxId - minId) / gridSize + 1;
 
         long start = minId;

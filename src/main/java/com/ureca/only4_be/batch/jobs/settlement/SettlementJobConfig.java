@@ -38,8 +38,8 @@ public class SettlementJobConfig {
     @Bean
     public TaskExecutor settlementTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10); // 기본 스레드 10개 (DB Connection 수 고려 필수!)
-        executor.setMaxPoolSize(10);
+        executor.setCorePoolSize(5); // CorePoolSize = 스레드 수
+        executor.setMaxPoolSize(5);
         executor.setThreadNamePrefix("settlement-thread-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.initialize();
@@ -64,7 +64,7 @@ public class SettlementJobConfig {
         return new StepBuilder("settlementMasterStep", jobRepository)
                 .partitioner("settlementSlaveStep", partitioner) // 파티셔너 등록
                 .step(settlementSlaveStep()) // 일꾼 등록
-                .gridSize(10) // 10조각으로 나눠라
+                .gridSize(5) // (= 파티션 수 != 스레드 수)
                 .taskExecutor(settlementTaskExecutor()) // 병렬 실행기
                 .build();
     }

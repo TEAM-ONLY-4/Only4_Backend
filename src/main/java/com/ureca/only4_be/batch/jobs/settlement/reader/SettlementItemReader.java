@@ -68,7 +68,7 @@ public class SettlementItemReader implements ItemStreamReader<SettlementSourceDt
     // 파싱된 기준 날짜 (open에서 초기화)
     private LocalDate targetDate;
 
-    private final Queue<SettlementSourceDto> buffer = new LinkedList<>();
+    private final Queue<SettlementSourceDto> buffer = new LinkedList<>(); // 스레드마다 독립적으로 생성됨
     private final int PAGE_SIZE = 1000;
 
     // ==========================================
