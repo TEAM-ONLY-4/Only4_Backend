@@ -4,6 +4,7 @@ import com.ureca.only4_be.batch.jobs.notification.dto.NotificationRequest;
 import com.ureca.only4_be.domain.bill.Bill;
 import com.ureca.only4_be.domain.bill.BillRepository;
 import com.ureca.only4_be.domain.bill.BillSendStatus;
+import com.ureca.only4_be.domain.bill_notification.BillNotification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.SkipListener;
@@ -15,7 +16,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class NotificationSkipListener implements SkipListener<Bill, NotificationRequest> {
+public class NotificationSkipListener implements SkipListener<Bill, BillNotification> {
 
     private final BillRepository billRepository;
     private final PlatformTransactionManager transactionManager; // 트랜잭션 매니저 주입
@@ -31,15 +32,14 @@ public class NotificationSkipListener implements SkipListener<Bill, Notification
         updateStatusToFail(item.getId());
     }
     @Override
-    public void onSkipInWrite(NotificationRequest item, Throwable t){
-        log.error("쓰기 중 오류 발생. Member ID:{}, 사유:{}", item.getMemberId(), t.getMessage());
-        updateStatusToFail(item.getBillId());
+    public void onSkipInWrite(BillNotification item, Throwable t){
+        log.error("쓰기 중 오류 발생. Member ID:{}, 사유:{}", item.getBill().getId(), t.getMessage());
+        updateStatusToFail(item.getBill().getId());
     }
 
     private void updateStatusToFail(Long billId) {
         // 1. 트랜잭션 템플릿 생성
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-
         // 2. 전파 속성 설정: 기존 트랜잭션과 무관하게 항상 새로운 트랜잭션을 시작
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 

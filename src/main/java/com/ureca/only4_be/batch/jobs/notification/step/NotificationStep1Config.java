@@ -1,5 +1,6 @@
 package com.ureca.only4_be.batch.jobs.notification.step;
 
+import com.ureca.only4_be.batch.jobs.notification.listener.NotificationSkipListener;
 import com.ureca.only4_be.batch.jobs.notification.processor.StagingProcessor;
 import com.ureca.only4_be.batch.jobs.notification.writer.StagingWriter;
 import com.ureca.only4_be.domain.bill.Bill;
@@ -24,6 +25,7 @@ public class NotificationStep1Config {
     private final ItemReader<Bill> notificationStagingReader;
     private final StagingProcessor stagingProcessor;
     private final StagingWriter stagingWriter;
+    private final NotificationSkipListener notificationSkipListener;
 
     @Bean
     public Step step1Staging(){
@@ -32,6 +34,12 @@ public class NotificationStep1Config {
                 .reader(notificationStagingReader)
                 .processor(stagingProcessor)
                 .writer(stagingWriter)
+                .faultTolerant()
+
+                .skip(Exception.class)
+                .skipLimit(100) // 최대 100개 에러까지는 봐줌
+
+                .listener(notificationSkipListener)
                 .build();
     }
 }
