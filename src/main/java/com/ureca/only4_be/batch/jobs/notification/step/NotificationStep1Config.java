@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +21,7 @@ public class NotificationStep1Config {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
 
-    private final JpaPagingItemReader<Bill> notificationStagingReader;
+    private final ItemReader<Bill> notificationStagingReader;
     private final StagingProcessor stagingProcessor;
     private final StagingWriter stagingWriter;
 

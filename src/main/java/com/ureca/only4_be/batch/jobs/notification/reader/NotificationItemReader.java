@@ -36,6 +36,7 @@ public class NotificationItemReader {
                 .queryString(
                         "SELECT bn FROM BillNotification bn " +
                         "JOIN FETCH bn.bill b " +
+                        "JOIN FETCH b.member m " +
                         "WHERE bn.publishStatus IN (:pending, :failed) " +
                         "ORDER BY bn.id ASC"
                 )
