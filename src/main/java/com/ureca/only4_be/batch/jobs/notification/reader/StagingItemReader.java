@@ -52,7 +52,7 @@ public class StagingItemReader {
                                 "LEFT JOIN BillNotification bn ON bn.bill = b " +
                                 "WHERE b.billingYearMonth = :targetBillingMonth " +
                                 "AND bn.id IS NULL " +
-                                "AND m.notificationDayOfMonth <= :today " +
+                                "AND (m.notificationDayOfMonth IS NULL OR m.notificationDayOfMonth <= :today) " +
                                 "AND (" +
                                 "   (m.doNotDisturbStartTime IS NULL OR m.doNotDisturbEndTime IS NULL) " +
                                 "   OR " +
