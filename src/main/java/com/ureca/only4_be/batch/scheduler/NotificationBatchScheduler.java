@@ -2,9 +2,7 @@ package com.ureca.only4_be.batch.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
@@ -38,8 +36,8 @@ public class NotificationBatchScheduler {
     @Scheduled(cron = "0 0 10-20/2 * * *")
     public void runNotificationJob() {
         log.info(">>> [Scheduler] 청구서 발송 배치 시작! 시간: {}", LocalDateTime.now());
-
         String todayDate = LocalDate.now().toString();
+
         try {
             log.info(">>> [Step 1] 적재 Job 시작");
 
@@ -48,13 +46,20 @@ public class NotificationBatchScheduler {
                     .addLong("time", System.currentTimeMillis())
                     .toJobParameters();
 
-            jobLauncher.run(stagingJob, stagingParams);
-            log.info(">>> [Step 1] 적재 Job 성공!");
+            JobExecution stagingExecution = jobLauncher.run(stagingJob, stagingParams);
+
+            if (stagingExecution.getStatus() != BatchStatus.COMPLETED) {
+                log.info(">>> 🚨 [Step 1] 적재 Job이 성공적으로 완료되지 않았습니다. Status: {}", stagingExecution.getStatus());
+                return;
+            }
+
+            log.info(">>> [Step 1] 적재 Job 성공! (Status: {})", stagingExecution.getStatus());
 
         } catch (Exception e) {
-            log.error(">>> [Step 1] 적재 Job 실패. 배치를 중단합니다.", e);
-            return;
+            log.error(">>> 🚨 [Step 1] 적재 Job 실행 중 예외 발생. 배치를 중단합니다.", e);
+            return; // 예외 발생 시에도 중단
         }
+
         // 2. 전송(Publishing) Job 실행 (Step 1 성공 시에만 실행됨)
         try {
             log.info(">>> [Step 2] 전송 Job 시작");
@@ -63,11 +68,17 @@ public class NotificationBatchScheduler {
                     .addLong("time", System.currentTimeMillis()+ 1) // timestamp 다르게 찍어서 별도 실행 취급
                     .toJobParameters();
 
-            jobLauncher.run(publishingJob, publishingParams);
-            log.info(">>> [Step 2] 전송 Job 성공!");
+            JobExecution publishingExecution = jobLauncher.run(publishingJob, publishingParams);
+
+            if (publishingExecution.getStatus() == BatchStatus.COMPLETED){
+                log.info(">>> [Step 2] 전송 Job 성공!");
+            } else {
+                log.error(">>> 🚨 [Step 2] 전송 Job 실패 또는 미완료. Status: {}", publishingExecution.getStatus());
+            }
 
         } catch (Exception e) {
-            log.error(">>> [Step 2] 전송 Job 실패", e.getMessage());
+            log.error(">>> [Step 2] 전송 Job 실행 중 예외 발생", e);
         }
+        log.info(">>> [Scheduler] 전체 프로세스 종료");
     }
 }
