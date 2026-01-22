@@ -14,7 +14,12 @@
       ],
       "environment": [
         { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
-        { "name": "SPRING_MAIN_WEB_APPLICATION_TYPE", "value": "none" }
+        { "name": "SPRING_MAIN_WEB_APPLICATION_TYPE", "value": "none" },
+        { "name": "PROD_DB_URL", "value": "PROD_DB_URL_VAL" },
+        { "name": "PROD_DB", "value": "PROD_DB_VAL" },
+        { "name": "PROD_DB_USER", "value": "PROD_DB_USER_VAL" },
+        { "name": "PROD_DB_PASSWORD", "value": "PROD_DB_PASSWORD_VAL" },
+        { "name": "PROD_KAFKA_URL", "value": "PROD_KAFKA_URL_VAL" }
       ],
       "secrets": [],
       "logConfiguration": {
