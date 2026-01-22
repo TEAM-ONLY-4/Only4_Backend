@@ -6,14 +6,13 @@ on:
 
 env:
   AWS_REGION: ap-northeast-2
-  ECR_REPOSITORY: only4-be-repo
+  ECR_REPOSITORY: only4-deploy
 
   # ECS 관련 변수
-  ECS_SERVICE: only4-be-service
-  ECS_CLUSTER: only4-be-cluster
-  ECS_TASK_DEFINITION: task-definition.json          # 최종 생성될 파일명 (Artifact)
+  ECS_CLUSTER: only4-batch-cluster          # 클러스터 이름 확인 (only4-batch-cluster가 맞는지)
+  ECS_TASK_DEFINITION: task-definition.json          # 최종 생성될 파일명
   ECS_TASK_TEMPLATE: task-definition.template.json   # 깃에 있는 템플릿 파일명
-  ECS_CONTAINER_NAME: only4-batch-container
+  ECS_CONTAINER_NAME: batch-container
 
   # EC2 관련 변수 (API 서버용)
   EC2_CONTAINER_NAME: only4-api
@@ -68,14 +67,11 @@ jobs:
       # 1. ECS 배포 단계 (Batch)
       # ----------------------------------------------------------------
 
-      # [수정 1] 템플릿을 읽어서 -> 실제 json 파일을 생성(>) 하도록 변경
-      # (DB 정보 등은 아래 render-task-definition 단계에서 주입하므로 여기선 ARN만 치환하면 됨)
       - name: Render Task Definition from Template
         run: |
           sed "s|ECS_TASK_EXECUTION_ROLE_ARN|${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}|g" ${{ env.ECS_TASK_TEMPLATE }} | \
           sed "s|ECS_TASK_ROLE_ARN|${{ secrets.ECS_TASK_ROLE_ARN }}|g" > ${{ env.ECS_TASK_DEFINITION }}
 
-      # [수정 2] 들여쓰기 교정 (앞쪽 공백 제거됨)
       - name: Fill in the new image ID and Env Vars in ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -84,7 +80,7 @@ jobs:
           container-name: ${{ env.ECS_CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
 
-          # [중요] DB 및 Kafka 환경변수는 여기서 주입 (Render Action이 알아서 처리함)
+          # DB 및 Kafka 환경변수 주입
           environment-variables: |
             PROD_DB_URL=${{ secrets.PROD_DB_URL }}
             PROD_DB=${{ secrets.PROD_DB }}
@@ -94,13 +90,12 @@ jobs:
             KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
             KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}
 
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task_definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+      # [핵심 변경] 서비스 배포(Deploy) -> 단순 등록(Register)으로 변경!
+      # 이유: 우리는 24시간 떠있는 Service를 안 쓰고, 스케줄러가 필요할 때만 실행하므로
+      # AWS에 "새 버전 나왔어!" 하고 등록만 해두면 됩니다.
+      - name: Register new Task Definition
+        run: |
+          aws ecs register-task-definition --cli-input-json file://${{ env.ECS_TASK_DEFINITION }}
 
       # ----------------------------------------------------------------
       # 2. EC2 배포 단계 (API Server - SSH 접속)
@@ -113,10 +108,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            # 1. 작업 디렉토리로 이동
             cd /home/${{ secrets.EC2_USERNAME }}/app
             
-            # 2. .env 파일 생성 (기존 파일 삭제 후 재생성)
             rm -f .env
             touch .env
             
@@ -129,12 +122,9 @@ jobs:
             echo "KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}" >> .env
             echo "KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}" >> .env
             
-            # 3. ECR 로그인
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
             
-            # 4. Docker Compose로 배포 (이미지 Pull & 재실행)
             docker-compose -f docker-compose-prod.yml pull
             docker-compose -f docker-compose-prod.yml up -d
             
-            # 5. 청소
             docker image prune -f

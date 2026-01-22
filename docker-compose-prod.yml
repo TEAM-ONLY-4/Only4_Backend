@@ -5,7 +5,7 @@ services:
   api-server:
     container_name: only4-api
     # ECR에서 이미지를 당겨옵니다
-    image: ${ECR_REGISTRY}/only4-be:latest
+    image: ${ECR_REGISTRY}/only4-deploy:latest
     restart: always
     ports:
       - "8080:8080" # 호스트 8080 -> 컨테이너 8080

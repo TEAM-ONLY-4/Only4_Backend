@@ -2,7 +2,7 @@
   "family": "only4-batch-task",
   "containerDefinitions": [
     {
-      "name": "only4-batch-container",
+      "name": "batch-container",
       "image": "placeholder-image",
       "essential": true,
       "portMappings": [
