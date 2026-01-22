@@ -5,7 +5,9 @@ import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.database.JpaCursorItemReader;
 import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.builder.JpaCursorItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +26,7 @@ public class StagingItemReader {
 
     @Bean
     @StepScope
-    public JpaPagingItemReader<Bill> notificationStagingReader(
+    public JpaCursorItemReader<Bill> notificationStagingReader(
             // 배치 실행 시 파라미터로 '청구년월'을 받기
             @Value("#{jobParameters['billingDate']}") String billingDateStr
     ){
@@ -41,10 +43,9 @@ public class StagingItemReader {
         parameters.put("today", (short) todayDay);
         parameters.put("currentTime", nowTime);
 
-        return new JpaPagingItemReaderBuilder<Bill>()
+        return new JpaCursorItemReaderBuilder<Bill>()
                 .name("notificationStatingReader")
                 .entityManagerFactory(entityManagerFactory)
-                .pageSize(1000)
                 .queryString(
                         "SELECT b FROM Bill b " +
                                 "JOIN FETCH b.member m " +
