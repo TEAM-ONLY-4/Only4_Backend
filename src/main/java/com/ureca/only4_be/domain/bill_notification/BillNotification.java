@@ -50,4 +50,8 @@ public class BillNotification extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_bill_notification_to_member"))
     private Member member;
+
+    public void changePublishStatus(PublishStatus status) {
+        this.publishStatus = status;
+    }
 }
