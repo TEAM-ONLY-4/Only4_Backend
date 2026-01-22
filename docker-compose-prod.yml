@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  # [API 서버 컨테이너]
+  api-server:
+    container_name: only4-api
+    # ECR에서 이미지를 당겨옵니다
+    image: ${ECR_REGISTRY}/only4-be:latest
+    restart: always
+    ports:
+      - "8080:8080" # 호스트 8080 -> 컨테이너 8080
+
+    # 호스트(EC2)의 .env 파일 내용을 컨테이너 환경변수로 주입
+    env_file:
+      - .env
+
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_BATCH_JOB_ENABLED=false
