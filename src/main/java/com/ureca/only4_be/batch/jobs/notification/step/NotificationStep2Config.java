@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.support.CompositeItemWriter;
 import org.springframework.batch.item.support.builder.CompositeItemWriterBuilder;
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 public class NotificationStep2Config {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final JpaPagingItemReader<BillNotification> notificationReader;
+    private final ItemReader<BillNotification> notificationReader;
     private final NotificationPublishProcessor notificationProcessor;
     private final NotificationKafkaWriter notificationKafkaWriter;
     private final NotificationStatusUpdateWriter billStatusUpdateWriter;

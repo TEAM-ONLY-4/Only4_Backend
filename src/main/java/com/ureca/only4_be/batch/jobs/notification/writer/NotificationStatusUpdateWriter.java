@@ -24,7 +24,7 @@ public class NotificationStatusUpdateWriter implements ItemWriter<NotificationRe
     public void write(Chunk<? extends NotificationRequest> chunk) {
 
         List<Long> notificationIds = chunk.getItems().stream()
-                .map(NotificationRequest::getBillId)
+                .map(NotificationRequest::getNotificationId)
                 .collect(Collectors.toList());
 
         //빈 리스트 체크 (방어 로직)
@@ -34,7 +34,7 @@ public class NotificationStatusUpdateWriter implements ItemWriter<NotificationRe
 
         billNotificationRepository.updatePublishStatus(
                 notificationIds,
-                PublishStatus.PUBLISHING
+                PublishStatus.PUBLISHED
         );
 
         // 5. 로그 기록
