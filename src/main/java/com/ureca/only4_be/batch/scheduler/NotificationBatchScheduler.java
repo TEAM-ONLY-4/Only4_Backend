@@ -26,7 +26,7 @@ public class NotificationBatchScheduler {
     private final Job notificationJob;
 
     // 10시~20시 2시간 간격
-    @Scheduled(cron = "0 0 10-20/2 * * *")
+    // @Scheduled(cron = "0 0 10-20/2 * * *")
     public void runNotificationJob() {
         log.info(">>> [Scheduler] 청구서 발송 통합 배치 시작! 시간: {}", LocalDateTime.now());
         String todayDate = LocalDate.now().toString();
