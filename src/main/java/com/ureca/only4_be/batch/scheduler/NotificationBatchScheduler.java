@@ -35,7 +35,7 @@ public class NotificationBatchScheduler {
 
     // 10시~20시 사이 2시간 간격 실행 (10, 12, 14, 16, 18, 20시)
     // 21시 이후(밤)와 08시 이전(아침)에는 실행되지 않음
-    @Scheduled(cron = "0 0 10-20/2 * * *")
+    // @Scheduled(cron = "0 0 10-20/2 * * *")
     public void runNotificationJob() {
         log.info(">>> [Scheduler] 청구서 발송 배치 시작! 시간: {}", LocalDateTime.now());
 
