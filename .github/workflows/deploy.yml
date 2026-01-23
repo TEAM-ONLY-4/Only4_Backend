@@ -144,6 +144,8 @@ jobs:
             
             rm -f .env
             cat <<EOF > .env
+            ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+            IMAGE_TAG=${{ github.sha }}
             PROD_DB_URL=${{ secrets.PROD_DB_URL }}
             PROD_DB=${{ secrets.PROD_DB }}
             PROD_DB_USER=${{ secrets.PROD_DB_USER }}
