@@ -39,6 +39,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+        # [추가] 윈도우 줄바꿈(\r) 제거 명령어
+      - name: Convert gradlew line endings
+        run: sed -i 's/\r$//' gradlew
+
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
