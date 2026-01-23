@@ -1,0 +1,34 @@
+{
+  "family": "only4-settlement-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "ECS_TASK_EXECUTION_ROLE_ARN",
+  "taskRoleArn": "ECS_TASK_ROLE_ARN",
+  "containerDefinitions": [
+    {
+      "name": "settlement-container",
+      "image": "SETTLEMENT_IMAGE_PLACEHOLDER",
+      "essential": true,
+      "command": [
+        "java",
+        "-jar",
+        "app.jar",
+        "--spring.batch.job.name=settlementJob"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/only4-batch",
+          "awslogs-region": "ap-northeast-2",
+          "awslogs-stream-prefix": "settlement"
+        }
+      },
+      "environment": [
+        { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
+        { "name": "SPRING_BATCH_JOB_ENABLED", "value": "false" }
+      ]
+    }
+  ]
+}

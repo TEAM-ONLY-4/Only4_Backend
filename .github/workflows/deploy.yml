@@ -8,14 +8,17 @@ env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: only4-deploy
 
-  # ECS 관련 변수
-  ECS_CLUSTER: only4-batch-cluster
-  ECS_TASK_DEFINITION: task-definition.json
-  ECS_TASK_TEMPLATE: task-definition.template.json
-  ECS_CONTAINER_NAME: batch-container
+  # ECS 템플릿 파일명
+  SETTLEMENT_TEMPLATE: task-settlement.json
+  NOTIFICATION_TEMPLATE: task-notification.json
 
-  # EC2 관련 변수
-  EC2_CONTAINER_NAME: only4-api
+  # ECS 렌더링 결과 파일명 (임시 생성됨)
+  SETTLEMENT_TASK_DEF: settlement-rendered.json
+  NOTIFICATION_TASK_DEF: notification-rendered.json
+
+  # JSON 내 containerDefinitions에 정의된 name과 반드시 일치해야 함
+  SETTLEMENT_CONTAINER_NAME: settlement-container
+  NOTIFICATION_CONTAINER_NAME: notification-container
 
 permissions:
   contents: read
@@ -67,20 +70,16 @@ jobs:
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       # ----------------------------------------------------------------
-      # 1. ECS 배포 단계 (Batch)
+      # 1. ECS 배포 단계 (Settlement & Notification 분리)
       # ----------------------------------------------------------------
 
-      - name: Render Task Definition from Template
-        run: |
-          sed "s|ECS_TASK_EXECUTION_ROLE_ARN|${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}|g" ${{ env.ECS_TASK_TEMPLATE }} | \
-          sed "s|ECS_TASK_ROLE_ARN|${{ secrets.ECS_TASK_ROLE_ARN }}|g" > ${{ env.ECS_TASK_DEFINITION }}
-
-      - name: Fill in the new image ID and Env Vars in ECS task definition
-        id: task-def
+      # [정산 배치]
+      - name: Render Settlement Task Definition
+        id: render-settlement
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
-          container-name: ${{ env.ECS_CONTAINER_NAME }}
+          task-definition: ${{ env.SETTLEMENT_TEMPLATE }}
+          container-name: ${{ env.SETTLEMENT_CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
           environment-variables: |
             PROD_DB_URL=${{ secrets.PROD_DB_URL }}
@@ -88,21 +87,38 @@ jobs:
             PROD_DB_USER=${{ secrets.PROD_DB_USER }}
             PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
             PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}
-            DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}
-            BATCH_SIZE=${{ secrets.BATCH_SIZE }}
             KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
-            KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}
-            EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}
-            INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}
-            MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
 
-      - name: Register new Task Definition
+      - name: Register Settlement Task Definition
         run: |
-          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }}
+          sed -i "s|ECS_TASK_EXECUTION_ROLE_ARN|${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}|g" ${{ steps.render-settlement.outputs.task-definition }}
+          sed -i "s|ECS_TASK_ROLE_ARN|${{ secrets.ECS_TASK_ROLE_ARN }}|g" ${{ steps.render-settlement.outputs.task-definition }}
+          aws ecs register-task-definition --cli-input-json file://${{ steps.render-settlement.outputs.task-definition }}
 
+      # [발송 배치]
+      - name: Render Notification Task Definition
+        id: render-notification
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.NOTIFICATION_TEMPLATE }}
+          container-name: ${{ env.NOTIFICATION_CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+          environment-variables: |
+            PROD_DB_URL=${{ secrets.PROD_DB_URL }}
+            PROD_DB=${{ secrets.PROD_DB }}
+            PROD_DB_USER=${{ secrets.PROD_DB_USER }}
+            PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+            PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}
+            KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
+
+      - name: Register Notification Task Definition
+        run: |
+          sed -i "s|ECS_TASK_EXECUTION_ROLE_ARN|${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}|g" ${{ steps.render-notification.outputs.task-definition }}
+          sed -i "s|ECS_TASK_ROLE_ARN|${{ secrets.ECS_TASK_ROLE_ARN }}|g" ${{ steps.render-notification.outputs.task-definition }}
+          aws ecs register-task-definition --cli-input-json file://${{ steps.render-notification.outputs.task-definition }}
 
       # ----------------------------------------------------------------
-      # 2. EC2 배포 단계 (API Server - SSH 접속)
+      # 2. EC2 배포 단계 (API Server)
       # ----------------------------------------------------------------
 
       - name: Create app directory if not exists
@@ -132,7 +148,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            sudo systemctl start docker
+            sudo systemctl start docker || true
             
             mkdir -p /home/${{ secrets.EC2_USERNAME }}/app
             sudo chown -R ${{ secrets.EC2_USERNAME }}: /home/${{ secrets.EC2_USERNAME }}/app
@@ -140,6 +156,7 @@ jobs:
             
             rm -f .env
             cat <<EOF > .env
+            SPRING_PROFILES_ACTIVE=prod
             ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
             IMAGE_TAG=${{ github.sha }}
             PROD_DB_URL=${{ secrets.PROD_DB_URL }}
