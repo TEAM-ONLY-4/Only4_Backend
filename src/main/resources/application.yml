@@ -46,8 +46,8 @@ spring:
     # 배치 파티셔너 설정
     settlement:
       partition:
-        min-id: ${SETTLEMENT_MIN_ID:} # 값이 없으면 null/empty
-        max-id: ${SETTLEMENT_MAX_ID:}
+        min: ${SETTLEMENT_MIN} # 값이 없으면 null/empty
+        max: ${SETTLEMENT_MAX}
 
 # ==========================================
 # [커스텀 앱 설정]

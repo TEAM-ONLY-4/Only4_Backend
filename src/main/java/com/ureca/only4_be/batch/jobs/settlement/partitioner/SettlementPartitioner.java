@@ -18,10 +18,10 @@ public class SettlementPartitioner implements Partitioner {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("${spring.batch.settlement.partition.min-id:}")
+    @Value("${spring.batch.settlement.partition.min}")
     private Long configuredMinId;
 
-    @Value("${spring.batch.settlement.partition.max-id:}")
+    @Value("${spring.batch.settlement.partition.max}")
     private Long configuredMaxId;
 
     @Override
@@ -29,6 +29,8 @@ public class SettlementPartitioner implements Partitioner {
         // 1. 전체 ID 범위 조회 (환경변수 우선, 없으면 DB 조회)
         Long minId = (configuredMinId != null) ? configuredMinId : jdbcTemplate.queryForObject("SELECT MIN(id) FROM member", Long.class);
         Long maxId = (configuredMaxId != null) ? configuredMaxId : jdbcTemplate.queryForObject("SELECT MAX(id) FROM member", Long.class);
+
+        log.info("minId: {}, maxId: {}", minId, maxId);
 
         Map<String, ExecutionContext> result = new HashMap<>();
 
