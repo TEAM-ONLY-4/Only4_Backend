@@ -102,7 +102,7 @@ jobs:
 
       - name: Register new Task Definition
         run: |
-          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task_definition }}
+          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }}
 
 
       # ----------------------------------------------------------------
