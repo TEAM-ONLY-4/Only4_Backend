@@ -1,6 +1,5 @@
 name: Deploy to Amazon ECS and EC2
 
-
 on:
   push:
     branches: [ "main", "develop" ]
@@ -102,7 +101,7 @@ jobs:
 
       - name: Register new Task Definition
         run: |
-          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task_definition }}
+          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }}
 
 
       # ----------------------------------------------------------------
@@ -149,6 +148,7 @@ jobs:
             echo "PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}" >> .env
             echo "PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}" >> .env
             
+            # [수정] EC2용 .env에도 공통 변수 추가
             echo "DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}" >> .env
             echo "BATCH_SIZE=${{ secrets.BATCH_SIZE }}" >> .env
             echo "KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}" >> .env
