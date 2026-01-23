@@ -1,12 +1,12 @@
 package com.ureca.only4_be.domain.bill_notification;
 
+import com.ureca.only4_be.api.dto.NotificationStatDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -22,4 +22,17 @@ public interface BillNotificationRepository extends JpaRepository<BillNotificati
             "WHERE bn.id IN :ids")
     void updatePublishStatus(@Param("ids") List<Long> ids,
                              @Param("status") PublishStatus status);
+
+    @Query(value = """
+        SELECT 
+            TO_CHAR(b.billing_year_month, 'YYYY-MM') AS billingMonth,
+            COUNT(CASE WHEN bn.publish_status = 'PUBLISHED' THEN 1 END) AS publishCount,
+            COUNT(CASE WHEN bn.send_status = 'SENT' THEN 1 END) AS sendCount
+        FROM bill_notification bn
+        JOIN bill b ON bn.bill_id = b.id
+        GROUP BY TO_CHAR(b.billing_year_month, 'YYYY-MM')
+        ORDER BY billingMonth DESC
+        LIMIT 12
+        """, nativeQuery = true)
+    List<NotificationStatDto> findMonthlyStats();
 }

@@ -55,8 +55,8 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
-	// 8. Swagger (Spring Boot 3 호환 버전으로 업그레이드 권장: 2.1.0 -> 2.6.0)
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+	// 8. Swagger (Spring Boot 3 호환 버전으로 업그레이드 권장: (Spring Boot 3.4 완벽 호환)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3'
 
 	// 9. Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
