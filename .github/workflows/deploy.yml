@@ -100,6 +100,18 @@ jobs:
       # ----------------------------------------------------------------
       # 2. EC2 배포 단계 (API Server - SSH 접속)
       # ----------------------------------------------------------------
+      # docker-compose-prod.yml 파일을 EC2로 전송 (SCP)
+      - name: Copy Docker Compose file to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          source: "docker-compose-prod.yml"  # 깃허브에 있는 이 파일을
+          target: "/home/${{ secrets.EC2_USERNAME }}/app" # EC2의 여기로 복사해라!
+
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:

@@ -5,37 +5,20 @@
       "name": "batch-container",
       "image": "placeholder-image",
       "essential": true,
-      "portMappings": [
-        {
-          "containerPort": 8080,
-          "hostPort": 8080,
-          "protocol": "tcp"
-        }
-      ],
+
+      "portMappings": [],
+
       "environment": [
         { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
-        { "name": "PROD_DB_URL", "value": "PROD_DB_URL_VAL" },
-        { "name": "PROD_DB", "value": "PROD_DB_VAL" },
-        { "name": "PROD_DB_USER", "value": "PROD_DB_USER_VAL" },
-        { "name": "PROD_DB_PASSWORD", "value": "PROD_DB_PASSWORD_VAL" },
-        { "name": "PROD_KAFKA_URL", "value": "PROD_KAFKA_URL_VAL" }
+        { "name": "SPRING_MAIN_WEB_APPLICATION_TYPE", "value": "none" }
       ],
-      "secrets": [],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/only4-batch",
-          "awslogs-region": "ap-northeast-2",
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
+      "secrets": []
     }
   ],
   "requiresCompatibilities": ["FARGATE"],
   "networkMode": "awsvpc",
   "cpu": "512",
   "memory": "1024",
-
 
   "executionRoleArn": "ECS_TASK_EXECUTION_ROLE_ARN",
   "taskRoleArn": "ECS_TASK_ROLE_ARN"
