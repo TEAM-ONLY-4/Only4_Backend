@@ -96,6 +96,8 @@ jobs:
             MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
             SETTLEMENT_MIN=${{ secrets.SETTLEMENT_MIN }}
             SETTLEMENT_MAX=${{ secrets.SETTLEMENT_MAX }}
+            SPRING_BATCH_JOB_NAME=settlementJob
+            SPRING_BATCH_JOB_ENABLED=true
 
       - name: Register Settlement Task Definition
         run: |
@@ -124,6 +126,8 @@ jobs:
             EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}
             INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}
             MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
+            SPRING_BATCH_JOB_NAME=notificationJob
+            SPRING_BATCH_JOB_ENABLED=true
 
       - name: Register Notification Task Definition
         run: |
@@ -171,6 +175,8 @@ jobs:
             rm -f .env
             cat <<EOF > .env
             SPRING_PROFILES_ACTIVE=prod
+            SPRING_BATCH_JOB_NAME=${{ secrets.SPRING_BATCH_JOB_NAME }}
+            SPRING_BATCH_JOB_ENABLED=${{ secrets.SPRING_BATCH_JOB_ENABLED }}
             ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
             IMAGE_TAG=${{ github.sha }}
             PROD_DB_URL=${{ secrets.PROD_DB_URL }}

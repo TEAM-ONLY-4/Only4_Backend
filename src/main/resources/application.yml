@@ -41,7 +41,8 @@ spring:
     jdbc:
       initialize-schema: always # 배치 실행에 필요한 메타 테이블(BATCH_JOB_INSTANCE 등)을 자동 생성
     job:
-      enabled: false  # 앱 실행될 때 모든 배치가 자동 실행되는 것 방지 (보통 막아둠)
+      enabled: ${SPRING_BATCH_JOB_ENABLED:false}
+      names: ${SPRING_BATCH_JOB_NAME:}
 
     # 배치 파티셔너 설정
     settlement:

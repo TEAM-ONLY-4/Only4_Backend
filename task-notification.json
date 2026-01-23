@@ -27,7 +27,8 @@
       },
       "environment": [
         { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
-        { "name": "SPRING_BATCH_JOB_ENABLED", "value": "true" }
+        { "name": "SPRING_BATCH_JOB_ENABLED", "value": "true" },
+        { "name": "SPRING_BATCH_JOB_NAME", "value": "notificationJob" }
       ]
     }
   ]
