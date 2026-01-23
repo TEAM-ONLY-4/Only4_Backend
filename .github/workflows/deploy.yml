@@ -104,6 +104,7 @@ jobs:
           # steps.task-def.outputs.task_definition(환경변수 채워진 파일)을 사용해야 함!
           aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task_definition }}
 
+
       # ----------------------------------------------------------------
       # 2. EC2 배포 단계 (API Server - SSH 접속)
       # ----------------------------------------------------------------
