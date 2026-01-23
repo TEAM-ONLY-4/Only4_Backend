@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ExecutionContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,11 +18,19 @@ public class SettlementPartitioner implements Partitioner {
 
     private final JdbcTemplate jdbcTemplate;
 
+    @Value("${spring.batch.settlement.partition.min}")
+    private Long configuredMinId;
+
+    @Value("${spring.batch.settlement.partition.max}")
+    private Long configuredMaxId;
+
     @Override
     public Map<String, ExecutionContext> partition(int gridSize) {
-        // 1. 전체 ID 범위 조회 (제일 작은 ID, 제일 큰 ID)
-        Long minId = jdbcTemplate.queryForObject("SELECT MIN(id) FROM member", Long.class);
-        Long maxId = jdbcTemplate.queryForObject("SELECT MAX(id) FROM member", Long.class);
+        // 1. 전체 ID 범위 조회 (환경변수 우선, 없으면 DB 조회)
+        Long minId = (configuredMinId != null) ? configuredMinId : jdbcTemplate.queryForObject("SELECT MIN(id) FROM member", Long.class);
+        Long maxId = (configuredMaxId != null) ? configuredMaxId : jdbcTemplate.queryForObject("SELECT MAX(id) FROM member", Long.class);
+
+        log.info("minId: {}, maxId: {}", minId, maxId);
 
         Map<String, ExecutionContext> result = new HashMap<>();
 
