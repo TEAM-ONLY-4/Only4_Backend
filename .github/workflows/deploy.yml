@@ -100,8 +100,6 @@ jobs:
 
       - name: Register new Task Definition
         run: |
-          # [핵심 수정] env.ECS_TASK_DEFINITION(빈 껍데기)이 아니라 
-          # steps.task-def.outputs.task_definition(환경변수 채워진 파일)을 사용해야 함!
           aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task_definition }}
 
 
@@ -149,7 +147,6 @@ jobs:
             echo "PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}" >> .env
             echo "PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}" >> .env
             
-            # [수정] EC2용 .env에도 공통 변수 추가
             echo "DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}" >> .env
             echo "BATCH_SIZE=${{ secrets.BATCH_SIZE }}" >> .env
             echo "KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}" >> .env
