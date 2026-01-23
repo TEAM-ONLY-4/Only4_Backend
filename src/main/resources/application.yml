@@ -28,11 +28,11 @@ spring:
         format_sql: true
 
         # 1. 읽기 최적화 (Bulk Fetch) - Reader 성능 향상
-        default_batch_fetch_size: ${DEFAULT_BATCH_FETCH_SIZE}
+        default_batch_fetch_size: ${DEFAULT_BATCH_FETCH_SIZE:1000}
 
         # 2. 쓰기 최적화 (Bulk Insert) - Writer 성능 향상
         jdbc:
-          batch_size: ${BATCH_SIZE}        # INSERT를 1000개씩 묶음
+          batch_size: ${BATCH_SIZE:1000}        # INSERT를 1000개씩 묶음
           order_inserts: true     # 같은 INSERT끼리 정렬해서 묶음 효과 극대화
           order_updates: true     # UPDATE도 정렬
 
@@ -53,9 +53,9 @@ app:
       email-request: ${KAFKA_EMAIL_REQUEST}
 
     retry: # 재시도 관련 설정
-      email-max-attempts: ${EMAIL_MAX_ATTEMPTS}
-      initial-interval-ms: ${INITIAL_INTERVAL_MS} # 재시도 간격의 시작값 / 0.5초 후 첫 재시도
-      max-interval-ms: ${MAX_INTERVAL_MS} # 재시도 간격 상한 / 아무리 커져도 30초를 넘지 않음
+      email-max-attempts: ${EMAIL_MAX_ATTEMPTS:2}
+      initial-interval-ms: ${INITIAL_INTERVAL_MS:1000} # 재시도 간격의 시작값 / 0.5초 후 첫 재시도
+      max-interval-ms: ${MAX_INTERVAL_MS:30000} # 재시도 간격 상한 / 아무리 커져도 30초를 넘지 않음
 
 # ==========================================
 # [모니터링 & 액추에이터 설정]
