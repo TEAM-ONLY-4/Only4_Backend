@@ -7,7 +7,7 @@ spring:
           on-profile: prod
   datasource:
     # 실제 운영 DB 주소 (환경변수로 주입받음)
-    url: jdbc:postgresql://${PROD_DB_URL}:5432/${PROD_DB}
+    url: jdbc:postgresql://${PROD_DB_URL}:5432/${PROD_DB}?stringtype=unspecified&reWriteBatchedInserts=true
     username: ${PROD_DB_USER}
     password: ${PROD_DB_PASSWORD}
 
