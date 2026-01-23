@@ -149,6 +149,7 @@ jobs:
             echo "PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}" >> .env
             echo "PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}" >> .env
             
+            # [수정] EC2용 .env에도 공통 변수 추가
             echo "DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}" >> .env
             echo "BATCH_SIZE=${{ secrets.BATCH_SIZE }}" >> .env
             echo "KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}" >> .env
