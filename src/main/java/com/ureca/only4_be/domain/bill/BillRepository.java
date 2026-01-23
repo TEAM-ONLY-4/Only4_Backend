@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,4 +18,11 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     @Modifying(clearAutomatically = true) // 벌크 연산 후 영속성 컨텍스트 초기화
     @Query("UPDATE Bill b SET b.billSendStatus = 'SENT' WHERE b.id IN :ids")
     void updateBillStatusToSendComplete(@Param("ids") List<Long> ids);
+
+    // 해당 월에 생성된 청구서 개수
+    long countByBillingYearMonth(LocalDate billingYearMonth);
+
+    // 해당 월의 총 청구 금액 합계
+    @Query("SELECT SUM(b.totalBilledAmount) FROM Bill b WHERE b.billingYearMonth = :billingDate")
+    BigDecimal sumTotalAmountByMonth(@Param("billingDate") LocalDate billingDate);
 }
