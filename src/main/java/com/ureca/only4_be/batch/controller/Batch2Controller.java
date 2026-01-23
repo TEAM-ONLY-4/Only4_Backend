@@ -17,21 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/batch/notifications")
+@RequestMapping("/api/batch")
 @RequiredArgsConstructor
 public class Batch2Controller {
 
     private final JobLauncher jobLauncher;
 
-    @Qualifier("notificationStagingJob")
-    private final Job notificationStagingJob;
+    @Qualifier("notificationJob")
+    private final Job notificationJob;
 
-    @Qualifier("notificationPublishingJob")
-    private final Job notificationPublishingJob;
-
-    // [Step 1] 적재 배치 실행 및 정보 반환
-    @GetMapping("/staging")
-    public ResponseEntity<?> runStagingJob(
+    @GetMapping("/notifications")
+    public ResponseEntity<?> runNotificationBatch(
             @RequestParam(value = "date", required = false) String requestDate
     ) {
         if (requestDate == null) {
@@ -45,7 +41,7 @@ public class Batch2Controller {
                     .toJobParameters();
 
             // JobExecution 객체를 반환받음
-            JobExecution execution = jobLauncher.run(notificationStagingJob, jobParameters);
+            JobExecution execution = jobLauncher.run(notificationJob, jobParameters);
 
             // DTO로 변환하여 반환
             return ResponseEntity.ok(BatchJobResponse.from(execution));
@@ -53,28 +49,7 @@ public class Batch2Controller {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError()
-                    .body("[Step 1] 실행 실패: " + e.getMessage());
-        }
-    }
-
-    // [Step 2] 전송 배치 실행 및 정보 반환
-    @GetMapping("/publish")
-    public ResponseEntity<?> runPublishingJob() {
-        try {
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addLong("time", System.currentTimeMillis())
-                    .toJobParameters();
-
-            // JobExecution 객체를 반환받음
-            JobExecution execution = jobLauncher.run(notificationPublishingJob, jobParameters);
-
-            // DTO로 변환하여 반환
-            return ResponseEntity.ok(BatchJobResponse.from(execution));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError()
-                    .body("❌ [Step 2] 실행 실패: " + e.getMessage());
+                    .body("배치 실행 실패: " + e.getMessage());
         }
     }
 }
