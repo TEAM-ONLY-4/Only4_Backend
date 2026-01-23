@@ -101,7 +101,7 @@ jobs:
 
       - name: Register new Task Definition
         run: |
-          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }}
+          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task_definition }}
 
 
       # ----------------------------------------------------------------
@@ -136,29 +136,33 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
+            sudo systemctl start docker
+            
+            mkdir -p /home/${{ secrets.EC2_USERNAME }}/app
+            sudo chown -R ${{ secrets.EC2_USERNAME }}: /home/${{ secrets.EC2_USERNAME }}/app
             cd /home/${{ secrets.EC2_USERNAME }}/app
             
             rm -f .env
-            touch .env
-            
-            echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> .env
-            echo "PROD_DB_URL=${{ secrets.PROD_DB_URL }}" >> .env
-            echo "PROD_DB=${{ secrets.PROD_DB }}" >> .env
-            echo "PROD_DB_USER=${{ secrets.PROD_DB_USER }}" >> .env
-            echo "PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}" >> .env
-            echo "PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}" >> .env
-            
-            # [수정] EC2용 .env에도 공통 변수 추가
-            echo "DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}" >> .env
-            echo "BATCH_SIZE=${{ secrets.BATCH_SIZE }}" >> .env
-            echo "KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}" >> .env
-            echo "KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}" >> .env
-            echo "EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}" >> .env
-            echo "INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}" >> .env
-            echo "MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}" >> .env
+            cat <<EOF > .env
+            ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+            IMAGE_TAG=${{ github.sha }}
+            PROD_DB_URL=${{ secrets.PROD_DB_URL }}
+            PROD_DB=${{ secrets.PROD_DB }}
+            PROD_DB_USER=${{ secrets.PROD_DB_USER }}
+            PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+            PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}
+            DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}
+            BATCH_SIZE=${{ secrets.BATCH_SIZE }}
+            KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
+            KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}
+            EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}
+            INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}
+            MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
+            EOF
             
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
             
+            docker-compose -f docker-compose-prod.yml down || true
             docker-compose -f docker-compose-prod.yml pull
             docker-compose -f docker-compose-prod.yml up -d
             
