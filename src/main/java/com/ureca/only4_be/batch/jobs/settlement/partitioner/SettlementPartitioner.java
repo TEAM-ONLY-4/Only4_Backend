@@ -18,10 +18,10 @@ public class SettlementPartitioner implements Partitioner {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("${spring.batch.settlement.partition.min}")
+    @Value("${spring.batch.settlement.partition.min:}")
     private Long configuredMinId;
 
-    @Value("${spring.batch.settlement.partition.max}")
+    @Value("${spring.batch.settlement.partition.max:}")
     private Long configuredMaxId;
 
     @Override
