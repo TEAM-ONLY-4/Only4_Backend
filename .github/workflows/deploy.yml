@@ -88,6 +88,12 @@ jobs:
             PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
             PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}
             KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
+            BATCH_SIZE=${{ secrets.BATCH_SIZE }}
+            DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}
+            KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}
+            EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}
+            INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}
+            MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
             SETTLEMENT_MIN=${{ secrets.SETTLEMENT_MIN }}
             SETTLEMENT_MAX=${{ secrets.SETTLEMENT_MAX }}
 
@@ -112,6 +118,12 @@ jobs:
             PROD_DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
             PROD_KAFKA_URL=${{ secrets.PROD_KAFKA_URL }}
             KAFKA_GROUP_ID=${{ secrets.KAFKA_GROUP_ID }}
+            BATCH_SIZE=${{ secrets.BATCH_SIZE }}
+            DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}
+            KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}
+            EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}
+            INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}
+            MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
 
       - name: Register Notification Task Definition
         run: |
