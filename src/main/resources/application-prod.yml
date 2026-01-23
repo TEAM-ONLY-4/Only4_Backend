@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  config:
+      activate:
+          on-profile: prod
+  datasource:
+    # 실제 운영 DB 주소 (환경변수로 주입받음)
+    url: jdbc:postgresql://${PROD_DB_URL}:5432/${PROD_DB}
+    username: ${PROD_DB_USER}
+    password: ${PROD_DB_PASSWORD}
+
+  flyway:
+    clean-disabled: true # [중요] 운영 DB 초기화 방지
+
+  jpa:
+    show-sql: false      # 로그 끄기
+
+  kafka:
+    # 실제 운영 카프카 주소
+    bootstrap-servers: ${PROD_KAFKA_URL}:9092

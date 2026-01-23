@@ -17,7 +17,7 @@ public class EmailKafkaProducer {
     public void send(NotificationRequest notificationRequest) {
         String topic = kafkaTopicsProperties.emailRequest();
 
-        kafkaTemplate.send(topic, notificationRequest)
+        kafkaTemplate.send(topic, String.valueOf(notificationRequest.getBillId()), notificationRequest)
                 .whenComplete((result, ex) -> {
                     if(ex != null) {
                         log.error("[Email Producer] 발행 실패. topic={}, memberId={}, billId={}, error={}",

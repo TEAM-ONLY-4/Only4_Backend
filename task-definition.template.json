@@ -1,0 +1,25 @@
+{
+  "family": "only4-batch-task",
+  "containerDefinitions": [
+    {
+      "name": "batch-container",
+      "image": "placeholder-image",
+      "essential": true,
+
+      "portMappings": [],
+
+      "environment": [
+        { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
+        { "name": "SPRING_MAIN_WEB_APPLICATION_TYPE", "value": "none" }
+      ],
+      "secrets": []
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "1024",
+
+  "executionRoleArn": "ECS_TASK_EXECUTION_ROLE_ARN",
+  "taskRoleArn": "ECS_TASK_ROLE_ARN"
+}

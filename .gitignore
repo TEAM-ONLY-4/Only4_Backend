@@ -40,7 +40,8 @@ out/
 .vscode/
 
 # --- Sensitive & Local Config (보안/설정) ---
-src/main/resources/application-*.yml
+src/main/resources/application-local.yml
+src/main/resources/application-dev.yml
 .env
 src/main/resources/architecture
 
