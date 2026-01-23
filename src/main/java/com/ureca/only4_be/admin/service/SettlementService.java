@@ -3,6 +3,8 @@ package com.ureca.only4_be.admin.service;
 import com.ureca.only4_be.admin.dto.settlement.SettlementStatusDto;
 import com.ureca.only4_be.domain.bill.BillRepository;
 import com.ureca.only4_be.domain.member.MemberRepository;
+import com.ureca.only4_be.global.exception.BusinessException;
+import com.ureca.only4_be.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
@@ -19,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 @Slf4j
 @Service
@@ -35,9 +38,17 @@ public class SettlementService {
     @Transactional(readOnly = true)
     public SettlementStatusDto getSettlementStatus(String dateStr) {
         // 1. 날짜 파싱
-        YearMonth ym = (dateStr != null)
-                ? YearMonth.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM"))
-                : YearMonth.now();
+        YearMonth ym;
+        try {
+            ym = (dateStr != null)
+                    ? YearMonth.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM"))
+                    : YearMonth.now();
+        } catch (DateTimeParseException e) {
+            // 파싱 에러가 나면 BusinessException을 던져서 GlobalExceptionHandler가 잡게 함
+            // ErrorCode.INVALID_TYPE_VALUE (G003) 사용
+            throw new BusinessException("날짜 형식이 올바르지 않습니다. (yyyy-MM 형식을 사용해주세요.)", ErrorCode.INVALID_TYPE_VALUE);
+        }
+
         LocalDate targetDate = ym.atDay(1);
 
         // 2. 전체 회원 수
