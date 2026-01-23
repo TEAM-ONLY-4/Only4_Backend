@@ -12,7 +12,7 @@ env:
   ECS_CLUSTER: only4-batch-cluster
   ECS_TASK_DEFINITION: task-definition.json
   ECS_TASK_TEMPLATE: task-definition.template.json
-  ECS_CONTAINER_NAME: batch-container # (중요) template.json의 이름과 같아야 함
+  ECS_CONTAINER_NAME: batch-container
 
   # EC2 관련 변수
   EC2_CONTAINER_NAME: only4-api
@@ -39,7 +39,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-        # [추가] 윈도우 줄바꿈(\r) 제거 명령어
       - name: Convert gradlew line endings
         run: sed -i 's/\r$//' gradlew
 
@@ -83,8 +82,6 @@ jobs:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.ECS_CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
-
-          # [수정] DB 정보뿐만 아니라 공통 환경변수도 모두 주입
           environment-variables: |
             PROD_DB_URL=${{ secrets.PROD_DB_URL }}
             PROD_DB=${{ secrets.PROD_DB }}
@@ -103,12 +100,10 @@ jobs:
         run: |
           aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task_definition }}
 
-
       # ----------------------------------------------------------------
       # 2. EC2 배포 단계 (API Server - SSH 접속)
       # ----------------------------------------------------------------
 
-      # [안전 장치] 폴더가 없으면 SCP가 실패할 수 있으므로 미리 생성
       - name: Create app directory if not exists
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -162,8 +157,8 @@ jobs:
             
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
             
-            docker-compose -f docker-compose-prod.yml down || true
-            docker-compose -f docker-compose-prod.yml pull
-            docker-compose -f docker-compose-prod.yml up -d
+            docker compose -f docker-compose-prod.yml down || true
+            docker compose -f docker-compose-prod.yml pull
+            docker compose -f docker-compose-prod.yml up -d
             
             docker image prune -f
