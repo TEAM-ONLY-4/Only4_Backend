@@ -80,5 +80,6 @@ public class NotificationBatchScheduler {
             log.error(">>> [Step 2] 전송 Job 실행 중 예외 발생", e);
         }
         log.info(">>> [Scheduler] 전체 프로세스 종료");
+
     }
 }
