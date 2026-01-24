@@ -71,7 +71,7 @@ public class SettlementService {
             lastExecution = jobExplorer.getLastJobExecution(lastJobInstance);
         }
 
-        LocalDateTime lastExecutedAt = (lastExecution != null) ? lastExecution.getEndTime() : null;
+        LocalDateTime lastExecutedAt = (lastExecution != null) ? lastExecution.getStartTime() : null;
 
         // 6. 완료 여부 판단
         boolean isCompleted = (totalCount > 0) && (processedCount >= totalCount);
@@ -103,7 +103,7 @@ public class SettlementService {
         // (2) 파라미터 생성 (time 제외 -> 중복 방지)
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("targetDate", targetDate)
-//                .addLong("timestamp", System.currentTimeMillis())
+                .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters();
 
         // (3) 이미 완료된 정산인지 확인
