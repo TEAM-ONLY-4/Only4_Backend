@@ -25,6 +25,12 @@
           "awslogs-stream-prefix": "settlement"
         }
       },
+
+      "dockerLabels": {
+        "PROMETHEUS_EXPORTER_PORT": "8080",
+        "PROMETHEUS_EXPORTER_PATH": "/actuator/prometheus"
+      },
+
       "environment": [
         { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
         { "name": "SPRING_BATCH_JOB_ENABLED", "value": "true" },
