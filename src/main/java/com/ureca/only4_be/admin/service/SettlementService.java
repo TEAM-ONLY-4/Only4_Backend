@@ -131,8 +131,13 @@ public class SettlementService {
                     JobExecution execution = jobLauncher.run(job, jobParameters);
 
                     stopWatch.stop();
-                    log.info(">>>> [Batch End] 소요시간: {}s, 상태: {}",
-                            stopWatch.getTotalTimeSeconds(), execution.getStatus());
+
+                    long totalSeconds = (long) stopWatch.getTotalTimeSeconds();
+                    long minutes = totalSeconds / 60;
+                    long seconds = totalSeconds % 60;
+                    String timeStr = (minutes > 0) ? String.format("%d분 %d초", minutes, seconds) : String.format("%d초", seconds);
+
+                    log.info(">>>> [Batch End] 완료! 소요시간: {}, 상태: {}", timeStr, execution.getStatus());
 
                 } catch (Exception e) {
                     log.error(">>>> [Batch Error] 배치 실행 중 에러 발생", e);
