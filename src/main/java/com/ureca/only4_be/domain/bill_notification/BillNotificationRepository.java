@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -35,4 +36,21 @@ public interface BillNotificationRepository extends JpaRepository<BillNotificati
         LIMIT 12
         """, nativeQuery = true)
     List<NotificationStatDto> findMonthlyStats();
+
+    // 1. 이번 달 발송 대기 건수 (SendStatus == PENDING)
+    @Query("SELECT COUNT(bn) FROM BillNotification bn " +
+            "JOIN bn.bill b " +
+            "WHERE b.billingYearMonth = :targetDate AND bn.sendStatus = :status")
+    long countByTargetDateAndSendStatus(@Param("targetDate") LocalDate targetDate,
+                                        @Param("status") SendStatus status);
+
+    // 2. 채널별 발송 성공 건수 (Channel == ? AND SendStatus == SENT)
+    @Query("SELECT COUNT(bn) FROM BillNotification bn " +
+            "JOIN bn.bill b " +
+            "WHERE b.billingYearMonth = :targetDate " +
+            "AND bn.channel = :channel " +
+            "AND bn.sendStatus = :status")
+    long countByTargetDateAndChannelAndSendStatus(@Param("targetDate") LocalDate targetDate,
+                                                  @Param("channel") BillChannel channel,
+                                                  @Param("status") SendStatus status);
 }
