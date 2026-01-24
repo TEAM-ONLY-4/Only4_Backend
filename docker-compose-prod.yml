@@ -17,6 +17,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_BATCH_JOB_ENABLED=false
+      - SPRING_APPLICATION_NAME=only4-api
 
     logging:
       driver: "json-file"
