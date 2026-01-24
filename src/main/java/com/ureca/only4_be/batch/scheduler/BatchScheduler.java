@@ -25,7 +25,7 @@ public class BatchScheduler {
      * "0 0 4 * * *" -> 매일 새벽 4시 0분 0초에 실행
      * (테스트할 때는 "0/10 * * * * *" 로 바꿔서 10초마다 도는지 확인)
      */
-    // @Scheduled(cron = "0 0 0 1 * *")
+    @Scheduled(cron = "0 0 0 1 * *")
     public void runSettlementJob() {
         try {
             log.info(">>>> [Scheduler] 정산 배치 스케줄러 실행 시작");
@@ -35,7 +35,6 @@ public class BatchScheduler {
             // time: 중복 실행 방지용 (이게 없으면 하루에 한 번만 실행됨 -> 테스트할 때 불편)
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("targetDate", LocalDate.now().toString())
-                    .addLong("time", System.currentTimeMillis())
                     .toJobParameters();
 
             // 2. Job 실행

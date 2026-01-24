@@ -15,6 +15,7 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,6 +23,8 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -68,7 +71,7 @@ public class SettlementService {
             lastExecution = jobExplorer.getLastJobExecution(lastJobInstance);
         }
 
-        LocalDateTime lastExecutedAt = (lastExecution != null) ? lastExecution.getEndTime() : null;
+        LocalDateTime lastExecutedAt = (lastExecution != null) ? lastExecution.getStartTime() : null;
 
         // 6. 완료 여부 판단
         boolean isCompleted = (totalCount > 0) && (processedCount >= totalCount);
@@ -81,5 +84,72 @@ public class SettlementService {
                 .lastExecutedAt(lastExecutedAt)
                 .isCompleted(isCompleted)
                 .build();
+    }
+
+    // 정산 배치 실행
+    public String runSettlementJob(String dateStr) {
+        String targetDate = (dateStr != null) ? dateStr : LocalDate.now().toString();
+
+        // --------------------------------------------------------
+        // [1. 사전 검증] 동기적으로 체크하여 즉시 409 에러 반환
+        // --------------------------------------------------------
+
+        // (1) 현재 실행 중인지 확인
+        Set<JobExecution> runningExecutions = jobExplorer.findRunningJobExecutions("settlementJob");
+        if (!runningExecutions.isEmpty()) {
+            throw new BusinessException("현재 정산 배치가 실행 중입니다.", ErrorCode.CONFLICT);
+        }
+
+        // (2) 파라미터 생성 (time 제외 -> 중복 방지)
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("targetDate", targetDate)
+//                .addLong("timestamp", System.currentTimeMillis())
+                .toJobParameters();
+
+        // (3) 이미 완료된 정산인지 확인
+        JobInstance lastInstance = jobExplorer.getJobInstance("settlementJob", jobParameters);
+        if (lastInstance != null) {
+            JobExecution lastExecution = jobExplorer.getLastJobExecution(lastInstance);
+            if (lastExecution != null && lastExecution.getStatus() == BatchStatus.COMPLETED) {
+                throw new BusinessException("이미 완료된 정산입니다. 재실행할 수 없습니다.", ErrorCode.CONFLICT);
+            }
+        }
+
+        // --------------------------------------------------------
+        // [2. 비동기 실행] 검증 통과 시 백그라운드에서 실행 & 시간 측정
+        // --------------------------------------------------------
+        try {
+            Job job = jobRegistry.getJob("settlementJob");
+
+            CompletableFuture.runAsync(() -> {
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
+                try {
+                    log.info(">>>> [Batch Start] 정산 배치 실행 (Target: {})", targetDate);
+
+                    // 실제 배치 수행
+                    JobExecution execution = jobLauncher.run(job, jobParameters);
+
+                    stopWatch.stop();
+
+                    long totalSeconds = (long) stopWatch.getTotalTimeSeconds();
+                    long minutes = totalSeconds / 60;
+                    long seconds = totalSeconds % 60;
+                    String timeStr = (minutes > 0) ? String.format("%d분 %d초", minutes, seconds) : String.format("%d초", seconds);
+
+                    log.info(">>>> [Batch End] 완료! 소요시간: {}, 상태: {}", timeStr, execution.getStatus());
+
+                } catch (Exception e) {
+                    log.error(">>>> [Batch Error] 배치 실행 중 에러 발생", e);
+                }
+            });
+
+            // 3. 즉시 성공 메시지 반환
+            return "이번 달 정산 배치가 시작되었습니다.";
+
+        } catch (Exception e) {
+            log.error("배치 요청 실패", e);
+            throw new BusinessException("배치 실행 중 오류가 발생했습니다.", ErrorCode.INTERNAL_SERVER_ERROR);
+        }
     }
 }
