@@ -2,8 +2,8 @@
   "family": "only4-notification-task",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "256",
-  "memory": "512",
+  "cpu": "1024",
+  "memory": "2048",
   "executionRoleArn": "ECS_TASK_EXECUTION_ROLE_ARN",
   "taskRoleArn": "ECS_TASK_ROLE_ARN",
   "containerDefinitions": [
