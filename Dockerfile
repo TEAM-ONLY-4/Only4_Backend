@@ -15,4 +15,4 @@ COPY ${JAR_FILE} app.jar
 
 # [권장] JAVA_OPTS를 추가하여 JVM 옵션을 외부에서 주입 가능하게 변경
 # 예: docker run -e JAVA_OPTS="-Xmx512m" ...
-ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar"]
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app.jar \"$@\"", "--"]
