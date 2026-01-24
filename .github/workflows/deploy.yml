@@ -123,6 +123,7 @@ jobs:
             BATCH_SIZE=${{ secrets.BATCH_SIZE }}
             DEFAULT_BATCH_FETCH_SIZE=${{ secrets.DEFAULT_BATCH_FETCH_SIZE }}
             KAFKA_EMAIL_REQUEST=${{ secrets.KAFKA_EMAIL_REQUEST }}
+            KAFKA_PARTITIONS=${{ secrets.KAFKA_PARTITIONS }}
             EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}
             INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}
             MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}

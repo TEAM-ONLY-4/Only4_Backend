@@ -17,7 +17,7 @@ public class KafkaTopicConfig {
     @Bean
     public NewTopic emailRequestTopic() {
         return TopicBuilder.name(properties.emailRequest())
-                .partitions(1)
+                .partitions(properties.partitions())
                 .replicas(1)
                 .build();
     }

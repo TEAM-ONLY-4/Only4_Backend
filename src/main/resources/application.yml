@@ -58,6 +58,7 @@ app:
     topics:
       group-id: ${KAFKA_GROUP_ID}
       email-request: ${KAFKA_EMAIL_REQUEST}
+      partitions: ${KAFKA_PARTITIONS:8}
 
     retry: # 재시도 관련 설정
       email-max-attempts: ${EMAIL_MAX_ATTEMPTS:2}
