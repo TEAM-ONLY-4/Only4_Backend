@@ -32,4 +32,8 @@ public class ReservationNotification extends BaseEntity {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "reservation_status", nullable = false, columnDefinition = "reservation_status_enum")
     private ReservationStatus reservationStatus;
+
+    public void changeStatus(ReservationStatus status) {
+        this.reservationStatus = status;
+    }
 }
