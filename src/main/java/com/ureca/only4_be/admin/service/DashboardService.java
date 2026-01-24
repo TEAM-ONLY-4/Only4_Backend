@@ -4,6 +4,7 @@ import com.ureca.only4_be.admin.dto.DashboardStatsDto;
 import com.ureca.only4_be.domain.bill.BillRepository;
 import com.ureca.only4_be.domain.bill_notification.BillChannel;
 import com.ureca.only4_be.domain.bill_notification.BillNotificationRepository;
+import com.ureca.only4_be.domain.bill_notification.PublishStatus;
 import com.ureca.only4_be.domain.bill_notification.SendStatus;
 import com.ureca.only4_be.domain.member.MemberRepository;
 import com.ureca.only4_be.global.exception.BusinessException;
@@ -44,9 +45,9 @@ public class DashboardService {
         // 3. 이번 달 정산 완료 건수 (Bill 테이블에서 해당 월 카운트)
         long settlementCompletedCount = billRepository.countByBillingYearMonth(targetDate);
 
-        // 4. 이번 달 발송 대기 건수 (알림 테이블에서 SendStatus가 PENDING인 것)
-        long sendWaitingCount = billNotificationRepository.countByTargetDateAndSendStatus(
-                targetDate, SendStatus.PENDING
+        // 4. 이번 달 발송 대기 건수 (알림 테이블에서 PublishStatus가 PENDING인 것)
+        long sendWaitingCount = billNotificationRepository.countByTargetDateAndPublishStatus(
+                targetDate, PublishStatus.PENDING
         );
 
         // 5. 이메일 발송 성공 건수

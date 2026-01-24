@@ -37,12 +37,12 @@ public interface BillNotificationRepository extends JpaRepository<BillNotificati
         """, nativeQuery = true)
     List<NotificationStatDto> findMonthlyStats();
 
-    // 1. 이번 달 발송 대기 건수 (SendStatus == PENDING)
+    // 1. 이번 달 발송 대기 건수 (PublishStatus == PENDING)
     @Query("SELECT COUNT(bn) FROM BillNotification bn " +
             "JOIN bn.bill b " +
-            "WHERE b.billingYearMonth = :targetDate AND bn.sendStatus = :status")
-    long countByTargetDateAndSendStatus(@Param("targetDate") LocalDate targetDate,
-                                        @Param("status") SendStatus status);
+            "WHERE b.billingYearMonth = :targetDate AND bn.publishStatus = :status")
+    long countByTargetDateAndPublishStatus(@Param("targetDate") LocalDate targetDate,
+                                           @Param("status") PublishStatus status);
 
     // 2. 채널별 발송 성공 건수 (Channel == ? AND SendStatus == SENT)
     @Query("SELECT COUNT(bn) FROM BillNotification bn " +
