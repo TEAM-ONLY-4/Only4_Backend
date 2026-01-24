@@ -1,4 +1,4 @@
-package com.ureca.only4_be.api.dto;
+package com.ureca.only4_be.api.dto.notification;
 
 import lombok.Builder;
 import lombok.Getter;

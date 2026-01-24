@@ -1,8 +1,8 @@
 package com.ureca.only4_be.api.service;
 
-import com.ureca.only4_be.api.dto.NotificationStatDto;
+import com.ureca.only4_be.api.dto.notification.NotificationStatDto;
 import org.springframework.batch.core.Job;
-import com.ureca.only4_be.api.dto.BatchJobResponse;
+import com.ureca.only4_be.api.dto.notification.BatchJobResponse;
 import com.ureca.only4_be.domain.bill_notification.BillNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

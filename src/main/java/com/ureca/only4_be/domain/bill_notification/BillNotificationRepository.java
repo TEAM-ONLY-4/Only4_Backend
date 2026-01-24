@@ -1,6 +1,6 @@
 package com.ureca.only4_be.domain.bill_notification;
 
-import com.ureca.only4_be.api.dto.NotificationStatDto;
+import com.ureca.only4_be.api.dto.notification.NotificationStatDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
