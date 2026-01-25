@@ -55,9 +55,14 @@ public class EventBridgeSchedulerService {
             // 예: "2026-01-25T10:00:00"
             String atExpression = "at(" + executeAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + ")";
 
+            String finalTaskDefinitionArn = notificationTaskDefinitionArn;
+            if (!finalTaskDefinitionArn.startsWith("arn:aws:ecs:")) {
+                finalTaskDefinitionArn = "arn:aws:ecs:" + region + ":" + getAccountId() + ":task-definition/" + notificationTaskDefinitionArn;
+            }
+
             // ECS Parameters 설정
             EcsParameters ecsParams = EcsParameters.builder()
-                    .taskDefinitionArn(notificationTaskDefinitionArn)
+                    .taskDefinitionArn(finalTaskDefinitionArn)
                     .launchType(LaunchType.FARGATE)
                     .networkConfiguration(NetworkConfiguration.builder()
                             .awsvpcConfiguration(AwsVpcConfiguration.builder()
