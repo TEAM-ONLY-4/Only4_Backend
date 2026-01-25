@@ -102,10 +102,6 @@ jobs:
             ECS_SECURITY_GROUP_IDS=${{ secrets.ECS_SECURITY_GROUP_IDS }}
             AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
             SCHEDULER_EXECUTION_ROLE_ARN=${{ secrets.SCHEDULER_EXECUTION_ROLE_ARN }}
-            SPRING_BATCH_JOB_NAME=settlementJob
-            SPRING_BATCH_JOB_ENABLED=true
-            SPRING_BATCH_JOB_EXIT_ON_COMPLETION=true
-            SPRING_MAIN_WEB_APPLICATION_TYPE=none
             JAVA_OPTS=${{ secrets.JAVA_OPTS }}
 
       - name: Register Settlement Task Definition
@@ -142,10 +138,6 @@ jobs:
             ECS_SECURITY_GROUP_IDS=${{ secrets.ECS_SECURITY_GROUP_IDS }}
             AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
             SCHEDULER_EXECUTION_ROLE_ARN=${{ secrets.SCHEDULER_EXECUTION_ROLE_ARN }}
-            SPRING_BATCH_JOB_NAME=notificationJob
-            SPRING_BATCH_JOB_ENABLED=true
-            SPRING_BATCH_JOB_EXIT_ON_COMPLETION=true
-            SPRING_MAIN_WEB_APPLICATION_TYPE=none
             JAVA_OPTS=${{ secrets.JAVA_OPTS }}
 
       - name: Register Notification Task Definition
