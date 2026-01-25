@@ -34,6 +34,7 @@ public class ReservationNotificationService {
         LocalDateTime scheduledTime = request.getScheduledSendAt();
 
         if (scheduledTime.isBefore(LocalDateTime.now())) {
+            log.info("현재 시간: {}, 예약 시간: {}", LocalDateTime.now(), scheduledTime);
             throw new IllegalArgumentException("발송 예정 시간은 미래여야 합니다.");
         }
 
