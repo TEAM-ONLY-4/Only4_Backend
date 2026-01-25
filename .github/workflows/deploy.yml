@@ -104,6 +104,7 @@ jobs:
             SCHEDULER_EXECUTION_ROLE_ARN=${{ secrets.SCHEDULER_EXECUTION_ROLE_ARN }}
             JAVA_OPTS=${{ secrets.JAVA_OPTS }}
 
+
       - name: Register Settlement Task Definition
         run: |
           sed -i "s|ECS_TASK_EXECUTION_ROLE_ARN|${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}|g" ${{ steps.render-settlement.outputs.task-definition }}
