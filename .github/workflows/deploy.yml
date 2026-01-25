@@ -194,6 +194,12 @@ jobs:
             MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
             SETTLEMENT_MIN=${{ secrets.SETTLEMENT_MIN }}
             SETTLEMENT_MAX=${{ secrets.SETTLEMENT_MAX }}
+            ECS_CLUSTER=${{ secrets.ECS_CLUSTER }}
+            ECS_SUBNET_IDS=${{ secrets.ECS_SUBNET_IDS }}
+            ECS_SECURITY_GROUP_IDS=${{ secrets.ECS_SECURITY_GROUP_IDS }}
+            AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+            SCHEDULER_EXECUTION_ROLE_ARN=${{ secrets.SCHEDULER_EXECUTION_ROLE_ARN }}
+            CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
             EOF
             
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
