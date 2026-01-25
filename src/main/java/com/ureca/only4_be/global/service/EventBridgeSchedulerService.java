@@ -78,7 +78,7 @@ public class EventBridgeSchedulerService {
                     .arn("arn:aws:ecs:" + region + ":" + getAccountId() + ":cluster/" + clusterName) // Cluster ARN
                     .roleArn(schedulerExecutionRoleArn) // Scheduler가 사용할 Role
                     .ecsParameters(ecsParams)
-                    .input("{\"containerOverrides\": [{\"name\": \"notification-container\", \"environment\": [{\"name\": \"run.id\", \"value\": \"" + System.currentTimeMillis() + "\"}]}]}")
+                    .input("{\"containerOverrides\": [{\"name\": \"notification-container\", \"command\": [\"run.id=" + System.currentTimeMillis() + "\"]}]}")
                     .build();
 
             CreateScheduleRequest request = CreateScheduleRequest.builder()
