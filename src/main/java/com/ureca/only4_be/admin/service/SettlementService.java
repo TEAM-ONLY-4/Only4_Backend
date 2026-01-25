@@ -26,6 +26,13 @@ import java.time.format.DateTimeParseException;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import com.ureca.only4_be.global.service.EcsTaskService;
+import org.springframework.core.env.Environment;
+import software.amazon.awssdk.services.ecs.model.KeyValuePair;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Arrays;
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,6 +43,12 @@ public class SettlementService {
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
     private final JobExplorer jobExplorer;
+    private final EcsTaskService ecsTaskService;
+    private final Environment env;
+
+    // AWS에 배포된 settlement-task
+    @Value("${cloud.aws.ecs.task-definitions.settlement:}")
+    private String settlementTaskDefinition;
 
     // 정산 현황 조회
     @Transactional(readOnly = true)
@@ -91,7 +104,7 @@ public class SettlementService {
         String targetDate = (dateStr != null) ? dateStr : LocalDate.now().toString();
 
         // --------------------------------------------------------
-        // [1. 사전 검증] 동기적으로 체크하여 즉시 409 에러 반환
+        // [1. 사전 검증] 동기적으로 체크하여 즉시 409 에러 반환 (공통)
         // --------------------------------------------------------
 
         // (1) 현재 실행 중인지 확인
@@ -100,10 +113,9 @@ public class SettlementService {
             throw new BusinessException("현재 정산 배치가 실행 중입니다.", ErrorCode.CONFLICT);
         }
 
-        // (2) 파라미터 생성 (time 제외 -> 중복 방지)
+        // (2) 파라미터 생성 (검증용)
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("targetDate", targetDate)
-//                .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters();
 
         // (3) 이미 완료된 정산인지 확인
@@ -116,7 +128,23 @@ public class SettlementService {
         }
 
         // --------------------------------------------------------
-        // [2. 비동기 실행] 검증 통과 시 백그라운드에서 실행 & 시간 측정
+        // [2. 실행] 환경에 따라 분기
+        // --------------------------------------------------------
+
+        // [Prod 환경 분기 처리]
+        if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+            log.info(">>>> [Prod Env] 정산 배치 ECS Task 요청");
+            List<KeyValuePair> envVars = List.of(
+                    KeyValuePair.builder().name("TARGET_DATE").value(targetDate).build(),
+                    KeyValuePair.builder().name("run.id").value(String.valueOf(System.currentTimeMillis())).build()
+            );
+            // task-settlement.json과 값 일치
+            ecsTaskService.runTask(settlementTaskDefinition, "settlement-container", envVars);
+            return "운영 환경: 정산 배치 ECS Task가 요청되었습니다. (비동기 실행)";
+        }
+
+        // --------------------------------------------------------
+        // [Local/Dev 환경] 직접 비동기 실행
         // --------------------------------------------------------
         try {
             Job job = jobRegistry.getJob("settlementJob");
