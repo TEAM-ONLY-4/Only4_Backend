@@ -31,3 +31,6 @@ cloud:
       task-definitions:
         settlement: only4-settlement-task
         notification: only4-notification-task
+    scheduler:
+      execution-role-arn: ${SCHEDULER_EXECUTION_ROLE_ARN}
+    account-id: ${AWS_ACCOUNT_ID}

@@ -15,12 +15,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+import com.ureca.only4_be.global.service.EventBridgeSchedulerService;
+import org.springframework.core.env.Environment;
+import java.util.Arrays;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReservationNotificationService {
 
     private final ReservationNotificationRepository reservationRepository;
+    private final EventBridgeSchedulerService eventBridgeSchedulerService;
+    private final Environment env;
 
     @Transactional
     public Long createReservation(ReservationRequest request) {
@@ -37,7 +43,14 @@ public class ReservationNotificationService {
                 .reservationStatus(ReservationStatus.SCHEDULED)
                 .build();
 
-        return reservationRepository.save(reservation).getId();
+        ReservationNotification saved = reservationRepository.save(reservation);
+
+        // [Prod 환경] EventBridge Scheduler에 스케줄 등록
+        if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+            eventBridgeSchedulerService.createSchedule(saved.getId(), saved.getScheduledSendAt());
+        }
+
+        return saved.getId();
     }
 
     @Transactional
@@ -49,6 +62,11 @@ public class ReservationNotificationService {
         // 검증 (이미 처리된 건은 수정 불가)
         if (oldReservation.getReservationStatus() != ReservationStatus.SCHEDULED) {
             throw new IllegalStateException("대기 중(SCHEDULED)인 예약만 변경할 수 있습니다.");
+        }
+
+        // [Prod 환경] 기존 EventBridge 스케줄 삭제
+        if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+            eventBridgeSchedulerService.deleteSchedule(id);
         }
 
         // 기존 예약 취소 처리 (Soft Delete)
@@ -65,6 +83,11 @@ public class ReservationNotificationService {
 
         if (reservation.getReservationStatus() != ReservationStatus.SCHEDULED) {
             throw new IllegalStateException("대기 중인 예약만 취소할 수 있습니다.");
+        }
+
+        // [Prod 환경] EventBridge 스케줄 삭제
+        if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
+            eventBridgeSchedulerService.deleteSchedule(id);
         }
 
         reservation.changeStatus(ReservationStatus.CANCELLED);

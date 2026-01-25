@@ -61,6 +61,7 @@ dependencies {
 	// 9. AWS SDK
 	implementation platform('software.amazon.awssdk:bom:2.21.1')
 	implementation 'software.amazon.awssdk:ecs'
+	implementation 'software.amazon.awssdk:scheduler'
 
 	// 10. Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
