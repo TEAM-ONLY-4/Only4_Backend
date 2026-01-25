@@ -20,3 +20,17 @@ spring:
   kafka:
     # 실제 운영 카프카 주소
     bootstrap-servers: ${PROD_KAFKA_URL}:9092
+
+cloud:
+  aws:
+    ecs:
+      cluster-name: ${ECS_CLUSTER}
+      region: ${AWS_REGION:ap-northeast-2}
+      subnet-ids: ${ECS_SUBNET_IDS}
+      security-group-ids: ${ECS_SECURITY_GROUP_IDS}
+      task-definitions:
+        settlement: only4-settlement-task
+        notification: only4-notification-task
+    scheduler:
+      execution-role-arn: ${SCHEDULER_EXECUTION_ROLE_ARN}
+    account-id: ${AWS_ACCOUNT_ID}
