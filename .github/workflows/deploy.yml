@@ -96,6 +96,12 @@ jobs:
             MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
             SETTLEMENT_MIN=${{ secrets.SETTLEMENT_MIN }}
             SETTLEMENT_MAX=${{ secrets.SETTLEMENT_MAX }}
+            ECS_CLUSTER=${{ secrets.ECS_CLUSTER }}
+            AWS_REGION=${{ env.AWS_REGION }}
+            ECS_SUBNET_IDS=${{ secrets.ECS_SUBNET_IDS }}
+            ECS_SECURITY_GROUP_IDS=${{ secrets.ECS_SECURITY_GROUP_IDS }}
+            AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+            SCHEDULER_EXECUTION_ROLE_ARN=${{ secrets.SCHEDULER_EXECUTION_ROLE_ARN }}
             SPRING_BATCH_JOB_NAME=settlementJob
             SPRING_BATCH_JOB_ENABLED=true
 
@@ -127,8 +133,15 @@ jobs:
             EMAIL_MAX_ATTEMPTS=${{ secrets.EMAIL_MAX_ATTEMPTS }}
             INITIAL_INTERVAL_MS=${{ secrets.INITIAL_INTERVAL_MS }}
             MAX_INTERVAL_MS=${{ secrets.MAX_INTERVAL_MS }}
+            ECS_CLUSTER=${{ secrets.ECS_CLUSTER }}
+            AWS_REGION=${{ env.AWS_REGION }}
+            ECS_SUBNET_IDS=${{ secrets.ECS_SUBNET_IDS }}
+            ECS_SECURITY_GROUP_IDS=${{ secrets.ECS_SECURITY_GROUP_IDS }}
+            AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+            SCHEDULER_EXECUTION_ROLE_ARN=${{ secrets.SCHEDULER_EXECUTION_ROLE_ARN }}
             SPRING_BATCH_JOB_NAME=notificationJob
             SPRING_BATCH_JOB_ENABLED=true
+            JAVA_OPTS=${{ secrets.JAVA_OPTS }}
 
       - name: Register Notification Task Definition
         run: |
