@@ -1,5 +1,6 @@
 package com.ureca.only4_be.batch.jobs.settlement;
 
+import com.ureca.only4_be.batch.common.listener.SystemExitListener;
 import com.ureca.only4_be.batch.jobs.settlement.dto.BillResultDto;
 import com.ureca.only4_be.batch.jobs.settlement.dto.SettlementSourceDto;
 import com.ureca.only4_be.batch.jobs.settlement.partitioner.SettlementPartitioner;
@@ -31,6 +32,7 @@ public class SettlementJobConfig {
     private final SettlementItemReader reader;
     private final MonthlySettlementProcessor processor;
     private final SettlementItemWriter writer; // JDBC Writer
+    private final SystemExitListener systemExitListener; // ECS Task가 자동으로 종료되도록 하는 Listener
 
     // =========================================
     // 1. Thread Pool (알바생 대기소)
@@ -52,6 +54,7 @@ public class SettlementJobConfig {
     @Bean
     public Job settlementJob() {
         return new JobBuilder("settlementJob", jobRepository)
+                .listener(systemExitListener) // 종료 리스너 등록
                 .start(settlementMasterStep()) // Master Step 시작
                 .build();
     }

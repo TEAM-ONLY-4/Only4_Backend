@@ -1,5 +1,6 @@
 package com.ureca.only4_be.batch.jobs.notification;
 
+import com.ureca.only4_be.batch.common.listener.SystemExitListener;
 import com.ureca.only4_be.batch.jobs.notification.listener.NotificationSkipListener;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
@@ -17,10 +18,12 @@ public class NotificationJobConfig {
     private final JobRepository jobRepository;
     private final Step step1Staging;
     private final Step step2Publishing;
+    private final SystemExitListener systemExitListener; // ECS Task가 자동으로 종료되도록 하는 Listener
 
     @Bean("notificationJob")
     public Job notificationJob() {
         return new JobBuilder("notificationJob", jobRepository)
+                .listener(systemExitListener) // 종료 리스너 등록
                 .start(step1Staging) // Step 시작
                 .next(step2Publishing)
                 .build();
