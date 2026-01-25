@@ -58,7 +58,11 @@ dependencies {
 	// 8. Swagger (Spring Boot 3 호환 버전으로 업그레이드 권장: (Spring Boot 3.4 완벽 호환)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3'
 
-	// 9. Test
+	// 9. AWS SDK
+	implementation platform('software.amazon.awssdk:bom:2.21.1')
+	implementation 'software.amazon.awssdk:ecs'
+
+	// 10. Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.batch:spring-batch-test'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
