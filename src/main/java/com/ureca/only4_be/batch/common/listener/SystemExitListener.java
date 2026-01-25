@@ -23,13 +23,20 @@ public class SystemExitListener implements JobExecutionListener {
     @Override
     public void afterJob(JobExecution jobExecution) {
         if (exitOnCompletion) {
-            log.info(">>>> [SystemExitListener] 배치 작업 완료. 시스템을 종료합니다. (Status: {})", jobExecution.getStatus());
+            log.info(">>>> [SystemExitListener] 배치 작업 완료. 시스템 종료를 예약합니다. (Status: {})", jobExecution.getStatus());
             
-            // 종료 코드 계산 (실패면 1, 성공이면 0)
             int exitCode = jobExecution.getStatus().isUnsuccessful() ? 1 : 0;
-            
-            // 안전하게 스프링 컨텍스트 닫고 JVM 종료
-            System.exit(SpringApplication.exit(context, () -> exitCode));
+
+            // 별도 스레드에서 지연 종료 (마지막 로그 출력 시간 확보)
+            new Thread(() -> {
+                try {
+                    Thread.sleep(5000); // 5초 대기
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                log.info(">>>> [SystemExitListener] 시스템 종료 수행 (Exit Code: {})", exitCode);
+                System.exit(SpringApplication.exit(context, () -> exitCode));
+            }).start();
         }
     }
 }
