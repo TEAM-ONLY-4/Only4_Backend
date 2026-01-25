@@ -15,7 +15,8 @@
         "java",
         "-jar",
         "app.jar",
-        "--spring.batch.job.name=notificationJob"
+        "--spring.batch.job.name=notificationJob",
+        "--spring.main.web-application-type=none"
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
