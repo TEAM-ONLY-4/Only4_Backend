@@ -54,6 +54,8 @@ spring:
 # [커스텀 앱 설정]
 # ==========================================
 app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
   kafka:
     topics:
       group-id: ${KAFKA_GROUP_ID}
