@@ -44,9 +44,13 @@ public class EcsTaskService {
                     .awsvpcConfiguration(vpcConfig)
                     .build();
 
+            List<String> command = envVars.stream()
+                    .map(kv -> kv.name() + "=" + kv.value())
+                    .toList();
+
             ContainerOverride containerOverride = ContainerOverride.builder()
                     .name(containerName)
-                    .environment(envVars)
+                    .command(command)
                     .build();
 
             TaskOverride taskOverride = TaskOverride.builder()
