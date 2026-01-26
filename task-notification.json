@@ -37,7 +37,7 @@
         { "name": "SPRING_BATCH_JOB_NAME", "value": "notificationJob" },
         { "name": "SPRING_APPLICATION_NAME", "value": "only4-notification" },
         { "name": "SPRING_BATCH_JOB_EXIT_ON_COMPLETION", "value": "true" },
-        { "name": "SPRING_MAIN_WEB_APPLICATION_TYPE", "value": "none" }
+        { "name": "SPRING_MAIN_WEB_APPLICATION_TYPE", "value": "servlet" }
       ]
     }
   ]

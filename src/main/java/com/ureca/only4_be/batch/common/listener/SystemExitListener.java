@@ -27,10 +27,11 @@ public class SystemExitListener implements JobExecutionListener {
             
             int exitCode = jobExecution.getStatus().isUnsuccessful() ? 1 : 0;
 
-            // 별도 스레드에서 지연 종료 (마지막 로그 출력 시간 확보)
+            // 별도 스레드에서 지연 종료 (마지막 로그 출력 및 Prometheus 수집 시간 확보)
             new Thread(() -> {
                 try {
-                    Thread.sleep(5000); // 5초 대기
+                    log.info(">>>> [SystemExitListener] Prometheus 수집 대기 중 (30초)...");
+                    Thread.sleep(30000); // 30초 대기
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
